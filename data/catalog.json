@@ -1,0 +1,1968 @@
+{
+ "meta": {
+  "title": "REGULATOR DIVIDER SOLVER",
+  "subtitle": "feedback networks from real JLCPCB shelf stock"
+ },
+ "regulators": [
+  {
+   "id": "lm317",
+   "name": "LM317",
+   "mfr": "TI / UTC / many",
+   "topo": "Linear · positive adj.",
+   "lcsc": "C75510",
+   "tier": "Basic",
+   "pkgNote": "UTC LM317AG · TO-252",
+   "vref": 1.25,
+   "vrefTol": 2,
+   "iadjTyp": 5e-05,
+   "iadjMax": 0.0001,
+   "raName": "R2",
+   "raPath": "ADJ → GND",
+   "rbName": "R1",
+   "rbPath": "VOUT → ADJ",
+   "rbRange": [
+    120,
+    1000
+   ],
+   "rbHint": "datasheet uses 240 Ω",
+   "limits": "Vin−Vout ≤ 40 V · ~1.5 A · dropout ≈ 3 V",
+   "hasIadj": true,
+   "minV": 1.25,
+   "notes": [
+    "LM338 / LM350 use the same equation — swap in for more current.",
+    "Keep R1 close to the part so the 1.25 V reference is sensed at the regulator."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "1 µF 0805 50 V",
+     "c": "C28323",
+     "note": "close to VIN"
+    },
+    {
+     "role": "C-adj",
+     "d": "10 µF tantalum 16 V",
+     "c": "C7171",
+     "note": "ADJ → GND, big ripple-rejection win"
+    },
+    {
+     "role": "C-out",
+     "d": "10 µF tantalum 16 V",
+     "c": "C7171",
+     "note": "tantalum; add protection diodes above 25 V out"
+    }
+   ]
+  },
+  {
+   "id": "lm337",
+   "name": "LM337",
+   "mfr": "TI / ST",
+   "topo": "Linear · negative adj.",
+   "lcsc": null,
+   "tier": "search",
+   "pkgNote": "TO-252 / TO-220",
+   "vref": 1.25,
+   "vrefTol": 2,
+   "iadjTyp": 5e-05,
+   "iadjMax": 0.0001,
+   "negative": true,
+   "raName": "R2",
+   "raPath": "ADJ → GND",
+   "rbName": "R1",
+   "rbPath": "VOUT → ADJ",
+   "rbRange": [
+    120,
+    1000
+   ],
+   "rbHint": "datasheet uses 120 Ω",
+   "limits": "|Vin−Vout| ≤ 40 V · 1.5 A",
+   "hasIadj": true,
+   "minV": 1.25,
+   "notes": [
+    "Negative rail twin of the LM317; magnitudes below, output is −Vout."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "1 µF 0805 50 V",
+     "c": "C28323",
+     "note": null
+    },
+    {
+     "role": "C-adj",
+     "d": "10 µF tantalum 16 V",
+     "c": "C7171",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "10 µF tantalum 16 V",
+     "c": "C7171",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": "1117adj",
+   "name": "AMS1117-ADJ / LM1117-ADJ",
+   "mfr": "AMS / TI",
+   "topo": "Linear · LDO adj.",
+   "lcsc": null,
+   "tier": "search",
+   "pkgNote": "SOT-223",
+   "vref": 1.25,
+   "vrefTol": 1.5,
+   "iadjTyp": 5.5e-05,
+   "iadjMax": 0.00012,
+   "raName": "R2",
+   "raPath": "ADJ → GND",
+   "rbName": "R1",
+   "rbPath": "VOUT → ADJ",
+   "rbRange": [
+    100,
+    470
+   ],
+   "rbHint": "datasheet uses 121–240 Ω",
+   "limits": "Vin ≤ 15 V · ~800 mA · dropout ≈ 1.3 V",
+   "hasIadj": true,
+   "minV": 1.25,
+   "notes": [
+    "Fixed versions are Basic parts: AMS1117-3.3 (C6186), AMS1117-5.0 (C6187) — skip the divider if one fits.",
+    "Wants some output ESR for stability — tantalum out is the safe choice."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "10 µF tantalum 16 V",
+     "c": "C7171",
+     "note": "tantalum for ESR / stability"
+    }
+   ]
+  },
+  {
+   "id": "xl1509",
+   "name": "XL1509-ADJ",
+   "mfr": "XLSEMI",
+   "topo": "Buck · 150 kHz · 2 A",
+   "variants": [
+    {
+     "n": "XL1509-ADJ",
+     "c": "C74192",
+     "note": "Basic · this entry"
+    },
+    {
+     "n": "XL1509-3.3",
+     "c": "C2681226",
+     "note": "fixed 3.3 V · UMW"
+    },
+    {
+     "n": "XL1509-5.0",
+     "c": "C61063",
+     "note": "fixed 5 V · Basic"
+    },
+    {
+     "n": "XL1509-5.0 (UMW)",
+     "c": "C2902368",
+     "note": "fixed 5 V clone"
+    },
+    {
+     "n": "XXL1509-5.0 (XBLW)",
+     "c": "C42376977",
+     "note": "fixed 5 V clone"
+    },
+    {
+     "n": "XL1509-12E1",
+     "c": "C62594",
+     "note": "fixed 12 V"
+    }
+   ],
+   "lcsc": "C74192",
+   "tier": "Basic",
+   "pkgNote": "SOP-8",
+   "vref": 1.23,
+   "vrefTol": 3,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R2",
+   "raPath": "VOUT → FB",
+   "rbName": "R1",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    240,
+    3300
+   ],
+   "rbHint": "datasheet uses ~1 k",
+   "limits": "Vin 4.5–40 V · 2 A",
+   "fsw": 150000,
+   "diode": true,
+   "minV": 1.23,
+   "notes": [
+    "LM2596-style clone that is still a Basic part. Fixed 5 V version: XL1509-5.0 (C61063)."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": "use 2× in parallel"
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": "2× in parallel; low-ESR electrolytic also fine"
+    },
+    {
+     "role": "D catch",
+     "d": "SS34 · 3 A 40 V Schottky, SMA",
+     "c": "C8678",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": "lm2596",
+   "name": "LM2596S-ADJ",
+   "mfr": "TI / ON / UMW",
+   "topo": "Buck · 150 kHz · 3 A",
+   "variants": [
+    {
+     "n": "LM2596S-ADJ (UMW)",
+     "c": "C347423",
+     "note": "this entry"
+    },
+    {
+     "n": "LM2596S-ADJ (TI/ON)",
+     "c": null,
+     "note": "search"
+    },
+    {
+     "n": "LM2596SX-5.0 (TI)",
+     "c": "C10002",
+     "note": "fixed 5 V · Basic"
+    },
+    {
+     "n": "LM2596S-5.0 (UMW)",
+     "c": "C347421",
+     "note": "fixed 5 V clone"
+    },
+    {
+     "n": "LM2596SX-3.3 / -12",
+     "c": null,
+     "note": "fixed, search"
+    }
+   ],
+   "lcsc": "C347423",
+   "tier": "Extended",
+   "pkgNote": "TO-263-5 (code = UMW clone; TI/ON via search)",
+   "vref": 1.23,
+   "vrefTol": 3,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R2",
+   "raPath": "VOUT → FB",
+   "rbName": "R1",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    240,
+    1500
+   ],
+   "rbHint": "datasheet: 240 Ω–1.5 k",
+   "limits": "Vin 4.5–40 V · 3 A",
+   "fsw": 150000,
+   "diode": true,
+   "minV": 1.23,
+   "notes": [
+    "Fixed 5 V version is Basic: LM2596SX-5.0 (C10002).",
+    "Datasheet wants a low-ESR electrolytic on the output (~220 µF) — electrolytics are Extended parts at JLCPCB."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": "2× in parallel"
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": "plus bulk electrolytic"
+    },
+    {
+     "role": "D catch",
+     "d": "SS54 · 5 A 40 V Schottky, SMA",
+     "c": "C22452",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": "lm2576",
+   "name": "LM2576-ADJ",
+   "mfr": "TI / ON",
+   "topo": "Buck · 52 kHz · 3 A",
+   "lcsc": null,
+   "tier": "search",
+   "pkgNote": "TO-263-5 / TO-220-5",
+   "vref": 1.23,
+   "vrefTol": 3,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R2",
+   "raPath": "VOUT → FB",
+   "rbName": "R1",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    240,
+    1500
+   ],
+   "rbHint": "datasheet: ~1 k",
+   "limits": "Vin ≤ 40 V (HV: 60 V) · 3 A",
+   "fsw": 52000,
+   "diode": true,
+   "minV": 1.23,
+   "notes": [
+    "Slow sibling of the LM2596 — bigger inductor, cheaper everything else. Fixed 5 V is Basic: LM2576SX-5.0 (C34465)."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": "2× in parallel"
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": "plus bulk electrolytic"
+    },
+    {
+     "role": "D catch",
+     "d": "SS54 · 5 A 40 V Schottky, SMA",
+     "c": "C22452",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": "tps54331",
+   "name": "TPS54331",
+   "mfr": "Texas Instruments",
+   "topo": "Buck · 570 kHz · 3 A",
+   "lcsc": "C9865",
+   "tier": "Basic",
+   "pkgNote": "SOIC-8",
+   "vref": 0.8,
+   "vrefTol": 1,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R5",
+   "raPath": "VOUT → VSENSE",
+   "rbName": "R6",
+   "rbPath": "VSENSE → GND",
+   "rbRange": [
+    1000,
+    100000
+   ],
+   "rbHint": "datasheet uses 10 k",
+   "limits": "Vin 3.5–28 V · 3 A",
+   "fsw": 570000,
+   "diode": true,
+   "minV": 0.8,
+   "notes": [
+    "Non-synchronous — needs the catch diode.",
+    "Compensation network (R3/C6/C7 on COMP) comes from the datasheet's design procedure; the 470 pF/100 pF below cover the common 3.3–5 V designs."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": "2× in parallel"
+    },
+    {
+     "role": "C-boot",
+     "d": "100 nF 0603 50 V X7R",
+     "c": "C14663",
+     "note": "BOOT → PH"
+    },
+    {
+     "role": "D catch",
+     "d": "SS34 · 3 A 40 V Schottky, SMA",
+     "c": "C8678",
+     "note": null
+    },
+    {
+     "role": "C-comp",
+     "d": "470 pF 0603 X7R",
+     "c": "C1620",
+     "note": "typical; verify with datasheet procedure"
+    }
+   ]
+  },
+  {
+   "id": "tps5430",
+   "name": "TPS5430",
+   "mfr": "Texas Instruments",
+   "topo": "Buck · 500 kHz · 3 A",
+   "lcsc": "C9864",
+   "tier": "Basic",
+   "pkgNote": "SO-8 PowerPAD",
+   "vref": 1.221,
+   "vrefTol": 1.5,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → VSENSE",
+   "rbName": "R2",
+   "rbPath": "VSENSE → GND",
+   "rbRange": [
+    1000,
+    100000
+   ],
+   "rbHint": "datasheet uses 10 k",
+   "limits": "Vin 5.5–36 V · 3 A",
+   "fsw": 500000,
+   "diode": true,
+   "minV": 1.221,
+   "notes": [
+    "Internally compensated — genuinely easy to lay out. Needs the catch diode."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": "2× in parallel"
+    },
+    {
+     "role": "C-boot",
+     "d": "100 nF 0603 50 V X7R",
+     "c": "C14663",
+     "note": "BOOT → PH"
+    },
+    {
+     "role": "D catch",
+     "d": "SS34 · 3 A 40 V Schottky, SMA",
+     "c": "C8678",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": "mp1584",
+   "name": "MP1584",
+   "mfr": "Monolithic Power Systems",
+   "topo": "Buck · 100k–1.5 MHz · 3 A · NRND",
+   "variants": [
+    {
+     "n": "MP1584EN",
+     "c": "C15051",
+     "note": "this entry · NRND"
+    },
+    {
+     "n": "MP2338 (successor)",
+     "c": "C7210174",
+     "note": "sync, SOT583"
+    }
+   ],
+   "lcsc": "C15051",
+   "tier": "Extended",
+   "pkgNote": "SOIC-8-EP",
+   "vref": 0.8,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    1000,
+    100000
+   ],
+   "rbHint": "modules commonly use ~8–40 k",
+   "limits": "Vin 4.5–28 V · 3 A",
+   "fsw": 500000,
+   "fswNote": "set by R-freq",
+   "diode": true,
+   "minV": 0.8,
+   "notes": [
+    "⚠ NRND — MPS marks the MP1584 \"not recommended for new designs; refer to MP2338\". Fine for hobby boards, but pick the MP2338 for anything long-lived.",
+    "The chip on every purple eBay module. Was a Basic part, now Extended — still cheap.",
+    "Frequency-set resistor (FREQ pin) and feed-forward cap across R-top per datasheet."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": null
+    },
+    {
+     "role": "D catch",
+     "d": "SS34 · 3 A 40 V Schottky, SMA",
+     "c": "C8678",
+     "note": null
+    },
+    {
+     "role": "C-ff",
+     "d": "100 pF 0603 C0G",
+     "c": "C14858",
+     "note": "across the top resistor"
+    }
+   ]
+  },
+  {
+   "id": "mp2338",
+   "name": "MP2338",
+   "mfr": "Monolithic Power Systems",
+   "topo": "Buck · sync · COT 450 kHz · 3 A",
+   "variants": [
+    {
+     "n": "MP2338GTL",
+     "c": "C7210174",
+     "note": "this entry"
+    },
+    {
+     "n": "MP1584EN (predecessor)",
+     "c": "C15051",
+     "note": "NRND"
+    }
+   ],
+   "lcsc": "C7210174",
+   "tier": "Extended",
+   "pkgNote": "SOT583 (tiny!)",
+   "vref": 0.5,
+   "vrefTol": 1.5,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    9090,
+    51000
+   ],
+   "rbHint": "Table 1 uses 9.09–51 k; keep 5–30 µA through R2",
+   "limits": "Vin 4.5–28 V · 3 A · Vout 0.5–16 V",
+   "fsw": 450000,
+   "minV": 0.5,
+   "notes": [
+    "MPS's designated successor to the MP1584 — synchronous (no diode), ±1.5% ref over temperature, 10 nA FB bias.",
+    "Feed-forward cap across R1 per datasheet Table 1 (82–470 pF by Vout); optional 10 k RT in series with FB for compensation.",
+    "Datasheet BOM: 2× 10 µF + 0.1 µF in, 2× 22 µF out, 22 nF soft-start, 0.1 µF BST."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": "2× + 0.1 µF"
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": "2×"
+    },
+    {
+     "role": "C-boot",
+     "d": "100 nF 0603 50 V X7R",
+     "c": "C14663",
+     "note": "BST → SW"
+    },
+    {
+     "role": "C-ss",
+     "d": "22 nF soft-start",
+     "c": null,
+     "note": "0603 X7R, search"
+    },
+    {
+     "role": "C-ff",
+     "d": "470 pF 0603 X7R",
+     "c": "C1620",
+     "note": "across R1 — 82 pF at 1/12 V, 300–470 pF mid-range"
+    }
+   ]
+  },
+  {
+   "id": "tps54560",
+   "name": "TPS54560B",
+   "mfr": "Texas Instruments",
+   "topo": "Buck · 5 A · 60 V-in",
+   "lcsc": "C1850354",
+   "tier": "Extended",
+   "pkgNote": "SO-8 PowerPAD",
+   "vref": 0.8,
+   "vrefTol": 1,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    10000,
+    100000
+   ],
+   "rbHint": "datasheet designs use ~10 k bottom",
+   "limits": "Vin 4.5–60 V · 5 A",
+   "fsw": 500000,
+   "fswNote": "RT-set, 100 k–2.5 MHz",
+   "diode": true,
+   "minV": 0.8,
+   "notes": [
+    "The high-current, high-voltage option in the compare set — 60 V input and 5 A out.",
+    "Non-synchronous: needs a catch diode rated well above your Vin (SS54 tops out at 40 V — use a 100 V Schottky for 48 V rails). External compensation on COMP."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": "voltage-rate for your Vin"
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": "2–3×"
+    },
+    {
+     "role": "C-boot",
+     "d": "100 nF 0603 50 V X7R",
+     "c": "C14663",
+     "note": "BOOT → SW"
+    },
+    {
+     "role": "D catch",
+     "d": "Schottky ≥ Vin, ≥ 5 A",
+     "c": null,
+     "note": "SS54 C22452 only to 40 V-in; search higher"
+    },
+    {
+     "role": "C-comp",
+     "d": "100 pF 0603 C0G",
+     "c": "C14858",
+     "note": "plus series R-C per datasheet procedure"
+    }
+   ]
+  },
+  {
+   "id": "tps54202",
+   "name": "TPS54202",
+   "mfr": "Texas Instruments",
+   "topo": "Buck · sync · 500 kHz · 2 A",
+   "lcsc": "C527684",
+   "tier": "Extended",
+   "pkgNote": "SOT-23-6",
+   "vref": 0.596,
+   "vrefTol": 1.5,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    10000,
+    100000
+   ],
+   "rbHint": "datasheet uses ~10 k bottom",
+   "limits": "Vin 4.5–28 V · 2 A",
+   "fsw": 500000,
+   "minV": 0.596,
+   "notes": [
+    "Cheap TI synchronous buck in SOT-23-6 — 28 V input tolerance for 24 V rails. Verify your grade's Vref tolerance in the datasheet."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": null
+    },
+    {
+     "role": "C-boot",
+     "d": "100 nF 0603 50 V X7R",
+     "c": "C14663",
+     "note": "BST → SW"
+    }
+   ]
+  },
+  {
+   "id": "xl4015",
+   "name": "XL4015",
+   "mfr": "XLSEMI",
+   "topo": "Buck · 180 kHz · 5 A",
+   "lcsc": "C51661",
+   "tier": "Extended",
+   "pkgNote": "TO-263-5",
+   "vref": 1.25,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R2",
+   "raPath": "VOUT → FB (top)",
+   "rbName": "R1",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    1000,
+    20000
+   ],
+   "rbHint": "the CC/CV modules hang a 10 k pot here",
+   "limits": "Vin 8–36 V · 5 A",
+   "fsw": 180000,
+   "diode": true,
+   "minV": 1.25,
+   "notes": [
+    "The chip on the CC/CV \"lab supply\" modules. 5 A with a big inductor and real copper — budget for heat.",
+    "Needs a ≥5 A Schottky catch diode."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": "plus bulk"
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": "plus bulk"
+    },
+    {
+     "role": "D catch",
+     "d": "Schottky ≥ 5 A, ≥ 40 V",
+     "c": null,
+     "note": "SS54 is 5 A — parallel or search bigger"
+    }
+   ]
+  },
+  {
+   "id": "xl7015",
+   "name": "XL7015",
+   "mfr": "XLSEMI",
+   "topo": "Buck · 150 kHz · 0.8 A · 80 V-in",
+   "lcsc": "C73013",
+   "tier": "Extended",
+   "pkgNote": "TO-252-5",
+   "vref": 1.25,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R2",
+   "raPath": "VOUT → FB (top)",
+   "rbName": "R1",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    1000,
+    20000
+   ],
+   "rbHint": "keep the bottom leg a few k",
+   "limits": "Vin 5–80 V · 0.8 A (derate to ~0.6 A at 48→5 V) · Vout ≤ 20 V",
+   "fsw": 150000,
+   "diode": true,
+   "minV": 1.25,
+   "notes": [
+    "The 80 V-input oddball — e-bike packs, 48 V telecom, solar strings. Modest current; derate hard at big step-downs.",
+    "Catch diode must be rated above Vin — 100 V Schottky for 48–80 V rails."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": "voltage-rate ≥ Vin!"
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": null
+    },
+    {
+     "role": "D catch",
+     "d": "Schottky ≥ Vin",
+     "c": null,
+     "note": "search 100 V, e.g. SS110/B5819W only to 40 V"
+    }
+   ]
+  },
+  {
+   "id": "sy8089",
+   "name": "SY8089A",
+   "mfr": "Silergy",
+   "topo": "Buck · sync · ~1 MHz · 2 A",
+   "lcsc": "C78988",
+   "tier": "Extended",
+   "pkgNote": "SOT-23-5",
+   "vref": 0.6,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    10000,
+    200000
+   ],
+   "rbHint": "Silergy examples use high-Z dividers",
+   "limits": "Vin 2.7–5.5 V · 2 A",
+   "fsw": 1000000,
+   "fswNote": "≈1 MHz class — verify",
+   "minV": 0.6,
+   "notes": [
+    "Single-cell / 5 V-rail specialist: 2 A from a SOT-23-5 with a tiny inductor. fsw and Vref tolerance are ballpark — confirm against the Silergy datasheet before finalizing."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850",
+     "note": "2×"
+    }
+   ]
+  },
+  {
+   "id": "sy8113",
+   "name": "SY8113B",
+   "mfr": "Silergy",
+   "topo": "Buck · sync · 3 A",
+   "variants": [
+    {
+     "n": "SY8113B",
+     "c": "C78989",
+     "note": "this entry"
+    },
+    {
+     "n": "SY8113I",
+     "c": "C479075",
+     "note": "grade variant"
+    }
+   ],
+   "lcsc": "C78989",
+   "tier": "Extended",
+   "pkgNote": "TSOT-23-6",
+   "vref": 0.6,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    10000,
+    200000
+   ],
+   "rbHint": "Silergy examples use high-Z dividers",
+   "limits": "Vin 4.5–18 V · 3 A",
+   "fsw": 500000,
+   "fswNote": "≈500–700 kHz class — verify",
+   "minV": 0.6,
+   "notes": [
+    "3 A from a TSOT-23-6, everywhere in cheap dev boards. fsw and Vref tolerance are ballpark — confirm against the Silergy datasheet (SY8113I variant: C479075)."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": "mp2315",
+   "name": "MP2315",
+   "mfr": "Monolithic Power Systems",
+   "topo": "Buck · sync · 500 kHz · 3 A",
+   "lcsc": null,
+   "tier": "search",
+   "pkgNote": "SOT-23-8 / TSOT",
+   "vref": 0.81,
+   "vrefTol": 1.5,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    1000,
+    100000
+   ],
+   "rbHint": "datasheet uses ~40 k top / 13 k bottom class",
+   "limits": "Vin 4.5–24 V · 3 A",
+   "fsw": 500000,
+   "minV": 0.81,
+   "notes": [
+    "Synchronous — no external diode. Check MP2315S vs MP2315 pinout before copying a layout."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": null
+    },
+    {
+     "role": "C-boot",
+     "d": "100 nF 0603 50 V X7R",
+     "c": "C14663",
+     "note": "BST → SW"
+    }
+   ]
+  },
+  {
+   "id": "mp2307",
+   "name": "MP2307",
+   "mfr": "Monolithic Power Systems",
+   "topo": "Buck · sync · 340 kHz · 3 A",
+   "lcsc": null,
+   "tier": "search",
+   "pkgNote": "SOIC-8-EP",
+   "vref": 0.925,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    1000,
+    100000
+   ],
+   "rbHint": "Mini-360 modules use ~10 k class",
+   "limits": "Vin 4.75–23 V · 3 A",
+   "fsw": 340000,
+   "minV": 0.925,
+   "notes": [
+    "The Mini-360 module chip. Synchronous, no diode needed."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": null
+    },
+    {
+     "role": "C-boot",
+     "d": "100 nF 0603 50 V X7R",
+     "c": "C14663",
+     "note": "BS → SW"
+    }
+   ]
+  },
+  {
+   "id": "mp1482",
+   "name": "MP1482",
+   "mfr": "Monolithic Power Systems",
+   "topo": "Buck · 340 kHz · 2 A",
+   "lcsc": "C14867",
+   "tier": "Extended",
+   "pkgNote": "SOIC-8",
+   "vref": 0.923,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    1000,
+    100000
+   ],
+   "rbHint": "~10 k class",
+   "limits": "Vin 4.75–18 V · 2 A",
+   "fsw": 340000,
+   "minV": 0.923,
+   "notes": [
+    "Was a Basic part, now Extended — verified LCSC code."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": null
+    },
+    {
+     "role": "C-boot",
+     "d": "100 nF 0603 50 V X7R",
+     "c": "C14663",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": "mp2451",
+   "name": "MP2451",
+   "mfr": "Monolithic Power Systems",
+   "topo": "Buck · 0.6 A · 36 V-in",
+   "lcsc": "C14123",
+   "tier": "Extended",
+   "pkgNote": "SOT-23-6",
+   "vref": 0.8,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    10000,
+    200000
+   ],
+   "rbHint": "high-impedance divider is fine here",
+   "limits": "Vin 4.5–36 V · 0.6 A",
+   "minV": 0.8,
+   "notes": [
+    "Handy for always-on housekeeping rails from 24 V systems."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850",
+     "note": null
+    },
+    {
+     "role": "C-boot",
+     "d": "100 nF 0603 50 V X7R",
+     "c": "C14663",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": "mp2359",
+   "name": "MP2359",
+   "mfr": "Monolithic Power Systems",
+   "topo": "Buck · 1.4 MHz · 1.2 A",
+   "lcsc": "C14259",
+   "tier": "Extended",
+   "pkgNote": "SOT-23-6",
+   "vref": 0.81,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    2000,
+    100000
+   ],
+   "rbHint": "~10 k class",
+   "limits": "Vin 4.5–24 V · 1.2 A",
+   "fsw": 1400000,
+   "diode": true,
+   "minV": 0.81,
+   "notes": [
+    "Fast switcher → tiny inductor. Needs the catch diode (B5819W is fine at 1.2 A)."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850",
+     "note": null
+    },
+    {
+     "role": "D catch",
+     "d": "B5819W · 1 A 40 V Schottky, SOD-123",
+     "c": "C8598",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": "tps562200",
+   "name": "TPS562208",
+   "mfr": "Texas Instruments",
+   "topo": "Buck · sync · D-CAP2 · 580 kHz · 2 A",
+   "variants": [
+    {
+     "n": "TPS562208",
+     "c": "C91301",
+     "note": "FCCM · this entry"
+    },
+    {
+     "n": "TPS562201",
+     "c": null,
+     "note": "pulse-skip sibling, search"
+    },
+    {
+     "n": "TPS563200 (3 A)",
+     "c": null,
+     "note": "search"
+    }
+   ],
+   "lcsc": "C91301",
+   "tier": "Extended",
+   "pkgNote": "SOT-23-6",
+   "vref": 0.768,
+   "vrefTol": 1,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → VFB",
+   "rbName": "R2",
+   "rbPath": "VFB → GND",
+   "rbRange": [
+    4700,
+    47000
+   ],
+   "rbHint": "datasheet uses 10 k",
+   "limits": "Vin 4.5–17 V · 2 A · Vout 0.76–7 V",
+   "fsw": 580000,
+   "minV": 0.768,
+   "notes": [
+    "D-CAP2 control — keep the divider impedance in the datasheet's range and use ceramic output caps. FCCM (always-PWM); TPS562201 is the pulse-skip sibling."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": "2× in parallel"
+    }
+   ]
+  },
+  {
+   "id": "mc34063",
+   "name": "MC34063",
+   "mfr": "ON Semi / many",
+   "topo": "Buck / boost / invert · ≤100 kHz",
+   "variants": [
+    {
+     "n": "MC34063A (SOIC)",
+     "c": "C32078",
+     "note": "Basic · this entry"
+    },
+    {
+     "n": "MC34063ECN (DIP-8)",
+     "c": "C5180",
+     "note": "through-hole"
+    },
+    {
+     "n": "AZ34063 (Diodes, SOIC)",
+     "c": "C99659",
+     "note": "clone"
+    }
+   ],
+   "lcsc": "C32078",
+   "tier": "Basic",
+   "pkgNote": "SOIC-8",
+   "vref": 1.25,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R2",
+   "raPath": "VOUT → CII (pin 5)",
+   "rbName": "R1",
+   "rbPath": "CII → GND",
+   "rbRange": [
+    1000,
+    47000
+   ],
+   "rbHint": "AN920 uses a few k",
+   "limits": "Vin 3–40 V · 1.5 A switch",
+   "fsw": 50000,
+   "fswNote": "set by C-t",
+   "diode": true,
+   "minV": 1.25,
+   "notes": [
+    "Through-hole builds: MC34063ECN DIP-8 is C5180; AZ34063UMTR (Diodes, SOIC) is C99659 — both Extended.",
+    "The 1980s survivor. Timing cap sets frequency; sense resistor sets current limit (basics only stock 100 mΩ 1206 — C25334 — parallel/series to taste)."
+   ],
+   "support": [
+    {
+     "role": "C-t timing",
+     "d": "470 pF 0603 X7R",
+     "c": "C1620",
+     "note": "≈33 kHz"
+    },
+    {
+     "role": "D catch",
+     "d": "B5819W · 1 A 40 V Schottky, SOD-123",
+     "c": "C8598",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": "plus bulk"
+    },
+    {
+     "role": "R-sc",
+     "d": "0.2–0.5 Ω current sense",
+     "c": null,
+     "note": "series 100 mΩ C25334, or search"
+    }
+   ]
+  },
+  {
+   "id": "mt3608",
+   "name": "MT3608",
+   "mfr": "Aerosemi",
+   "topo": "Boost · 1.2 MHz · 2 A switch",
+   "lcsc": "C2932326",
+   "tier": "Extended",
+   "pkgNote": "SOT-23-6 (code = MT3608L)",
+   "vref": 0.6,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    10000,
+    100000
+   ],
+   "rbHint": "the blue modules use ~7.5 k + pot",
+   "limits": "Vin 2–24 V · Vout ≤ 28 V · 2 A switch (Iout = Isw × Vin/Vout − margin)",
+   "fsw": 1200000,
+   "diode": true,
+   "boost": true,
+   "minV": 2.5,
+   "notes": [
+    "The chip on every blue boost module. Output current is switch-limited: at 5→12 V expect ≲0.7 A.",
+    "Needs the Schottky to the output (SS34-class) — boost topology, so remember Vout appears at the input when idle."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891",
+     "note": null
+    },
+    {
+     "role": "D",
+     "d": "SS34 · 3 A 40 V Schottky, SMA",
+     "c": "C8678",
+     "note": "SW → VOUT"
+    }
+   ]
+  },
+  {
+   "id": "tps62000",
+   "name": "TPS62000 (adj)",
+   "mfr": "Texas Instruments",
+   "topo": "Buck · sync · 750 kHz · 0.6 A",
+   "variants": [
+    {
+     "n": "TPS62000 (adj)",
+     "c": null,
+     "note": "this entry, search"
+    },
+    {
+     "n": "TPS62001–62008 fixed",
+     "c": null,
+     "note": "0.9–3.3 V · see the fixed-part banner at those targets"
+    }
+   ],
+   "lcsc": null,
+   "tier": "search",
+   "pkgNote": "VSSOP-10 · fixed variants TPS62001–62008",
+   "vref": 0.45,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    100000,
+    400000
+   ],
+   "rbHint": "keep R1+R2 ≤ 1 MΩ; datasheet example uses 180 k bottom",
+   "limits": "Vin 2–5.5 V · 0.6 A (0.2 A below 2.5 V-in) · Vout 0.8–VIN",
+   "fsw": 750000,
+   "minV": 0.8,
+   "notes": [
+    "Battery-rail buck from the example datasheet: 1–3 cell input, 100% duty for dropout, ILIM pin sets 0.6/1.2 A switch limit.",
+    "Stability wants a feed-forward cap across R1: C-ff ≈ 1/(2π·30k·R1) below 1 µF-out designs — see datasheet Eq. 2–3. Total accuracy spec is ±3–4%, so the ±2% ref default here is a guess."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850",
+     "note": null
+    },
+    {
+     "role": "C-fc",
+     "d": "100 nF 0603 50 V X7R",
+     "c": "C14663",
+     "note": "FC pin bypass"
+    },
+    {
+     "role": "C-ff",
+     "d": "10 pF 0603 C0G",
+     "c": "C1634",
+     "note": "across R1 per Eq. 2–3"
+    }
+   ]
+  },
+  {
+   "id": "tps61040",
+   "name": "TPS61040",
+   "mfr": "Texas Instruments",
+   "topo": "Boost · 1 MHz · 400 mA sw",
+   "lcsc": "C7722",
+   "tier": "Basic",
+   "pkgNote": "SOT-23-5",
+   "vref": 1.233,
+   "vrefTol": 2,
+   "iadjTyp": 0,
+   "iadjMax": 0,
+   "boost": true,
+   "raName": "R1",
+   "raPath": "VOUT → FB",
+   "rbName": "R2",
+   "rbPath": "FB → GND",
+   "rbRange": [
+    100000,
+    1000000
+   ],
+   "rbHint": "high-Z divider preserves the low Iq",
+   "limits": "Vin 1.8–6 V · Vout ≤ 28 V",
+   "minV": 1.233,
+   "notes": [
+    "Classic LCD-bias / small-boost part. Add ~10 pF feed-forward across R1."
+   ],
+   "support": [
+    {
+     "role": "C-in",
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850",
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "1 µF 0805 50 V",
+     "c": "C28323",
+     "note": "voltage-derate for >25 V outputs"
+    },
+    {
+     "role": "C-ff",
+     "d": "10 pF 0603 C0G",
+     "c": "C1634",
+     "note": "across the top resistor"
+    },
+    {
+     "role": "D",
+     "d": "B5819W · 1 A 40 V Schottky, SOD-123",
+     "c": "C8598",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": "tl431",
+   "name": "TL431 / CJ431",
+   "mfr": "TI / CJ / many",
+   "topo": "Shunt reference",
+   "lcsc": "C3113",
+   "tier": "Basic",
+   "pkgNote": "CJ431 ±0.5% · SOT-23",
+   "vref": 2.495,
+   "vrefTol": 0.5,
+   "iadjTyp": 2e-06,
+   "iadjMax": 4e-06,
+   "raName": "R1",
+   "raPath": "VOUT (cathode) → REF",
+   "rbName": "R2",
+   "rbPath": "REF → GND",
+   "rbRange": [
+    1000,
+    100000
+   ],
+   "rbHint": "keep divider current ≫ I-ref (2 µA)",
+   "limits": "Vout 2.495–36 V · 1–100 mA cathode",
+   "hasIadj": true,
+   "minV": 2.495,
+   "shunt": true,
+   "notes": [
+    "Shunt topology: needs a bias resistor from the supply sized so cathode current stays in 1–100 mA over load."
+   ],
+   "support": [
+    {
+     "role": "R-bias",
+     "d": "(Vsupply − Vout) / ~5 mA — pick from the resistor table",
+     "c": null,
+     "note": null
+    },
+    {
+     "role": "C-out",
+     "d": "100 nF 0603 50 V X7R",
+     "c": "C14663",
+     "note": "check the TL431 stability region for large caps"
+    }
+   ]
+  }
+ ],
+ "fixed": [
+  {
+   "v": 3.3,
+   "n": "AMS1117-3.3",
+   "c": "C6186",
+   "tier": "Basic",
+   "d": "SOT-223 LDO",
+   "i": 1,
+   "t": "lin",
+   "pd": 1.5,
+   "vim": 15
+  },
+  {
+   "v": 5,
+   "n": "AMS1117-5.0",
+   "c": "C6187",
+   "tier": "Basic",
+   "d": "SOT-223 LDO",
+   "i": 1,
+   "t": "lin",
+   "pd": 1.5,
+   "vim": 15
+  },
+  {
+   "v": 3.3,
+   "n": "XC6206P332",
+   "c": "C5446",
+   "tier": "Basic",
+   "d": "SOT-23 LDO",
+   "i": 0.2,
+   "t": "lin",
+   "pd": 0.25,
+   "vim": 6
+  },
+  {
+   "v": 3.3,
+   "n": "HT7533-1",
+   "c": "C14289",
+   "tier": "Basic",
+   "d": "SOT-89 LDO · low Iq",
+   "i": 0.1,
+   "t": "lin",
+   "pd": 0.5,
+   "vim": 30
+  },
+  {
+   "v": 5,
+   "n": "HT7550-1",
+   "c": "C16106",
+   "tier": "Basic",
+   "d": "SOT-89 LDO · low Iq",
+   "i": 0.15,
+   "t": "lin",
+   "pd": 0.5,
+   "vim": 30
+  },
+  {
+   "v": 5,
+   "n": "L78M05",
+   "c": "C58069",
+   "tier": "Basic",
+   "d": "TO-252 linear",
+   "i": 0.5,
+   "t": "lin",
+   "pd": 1.5,
+   "vim": 35
+  },
+  {
+   "v": 5,
+   "n": "78L05",
+   "c": "C71136",
+   "tier": "Basic",
+   "d": "SOT-89 linear",
+   "i": 0.1,
+   "t": "lin",
+   "pd": 0.5,
+   "vim": 30
+  },
+  {
+   "v": 12,
+   "n": "78L12",
+   "c": "C75501",
+   "tier": "Basic",
+   "d": "SOT-89 linear",
+   "i": 0.1,
+   "t": "lin",
+   "pd": 0.5,
+   "vim": 35
+  },
+  {
+   "v": 5,
+   "n": "LM2596SX-5.0",
+   "c": "C10002",
+   "tier": "Basic",
+   "d": "buck · TO-263",
+   "i": 3,
+   "t": "buck",
+   "vim": 40
+  },
+  {
+   "v": 5,
+   "n": "LM2576SX-5.0",
+   "c": "C34465",
+   "tier": "Basic",
+   "d": "buck · TO-263",
+   "i": 3,
+   "t": "buck",
+   "vim": 40
+  },
+  {
+   "v": 5,
+   "n": "XL1509-5.0",
+   "c": "C61063",
+   "tier": "Basic",
+   "d": "buck · SOP-8",
+   "i": 2,
+   "t": "buck",
+   "vim": 40
+  },
+  {
+   "v": 3.3,
+   "n": "XL1509-3.3 (UMW)",
+   "c": "C2681226",
+   "tier": "Extended",
+   "d": "buck · SOP-8",
+   "i": 2,
+   "t": "buck",
+   "vim": 40
+  },
+  {
+   "v": 12,
+   "n": "XL1509-12E1",
+   "c": "C62594",
+   "tier": "Extended",
+   "d": "buck · SOIC-8",
+   "i": 2,
+   "t": "buck",
+   "vim": 40
+  },
+  {
+   "v": 0.9,
+   "n": "TPS62001",
+   "c": null,
+   "tier": "search",
+   "d": "buck · VSSOP-10",
+   "i": 0.6,
+   "t": "buck",
+   "vim": 5.5
+  },
+  {
+   "v": 1,
+   "n": "TPS62002",
+   "c": null,
+   "tier": "search",
+   "d": "buck · VSSOP-10",
+   "i": 0.6,
+   "t": "buck",
+   "vim": 5.5
+  },
+  {
+   "v": 1.2,
+   "n": "TPS62003",
+   "c": null,
+   "tier": "search",
+   "d": "buck · VSSOP-10",
+   "i": 0.6,
+   "t": "buck",
+   "vim": 5.5
+  },
+  {
+   "v": 1.5,
+   "n": "TPS62004",
+   "c": null,
+   "tier": "search",
+   "d": "buck · VSSOP-10",
+   "i": 0.6,
+   "t": "buck",
+   "vim": 5.5
+  },
+  {
+   "v": 1.8,
+   "n": "TPS62005",
+   "c": null,
+   "tier": "search",
+   "d": "buck · VSSOP-10",
+   "i": 0.6,
+   "t": "buck",
+   "vim": 5.5
+  },
+  {
+   "v": 1.9,
+   "n": "TPS62008",
+   "c": null,
+   "tier": "search",
+   "d": "buck · VSSOP-10",
+   "i": 0.6,
+   "t": "buck",
+   "vim": 5.5
+  },
+  {
+   "v": 2.5,
+   "n": "TPS62006",
+   "c": null,
+   "tier": "search",
+   "d": "buck · VSSOP-10",
+   "i": 0.6,
+   "t": "buck",
+   "vim": 5.5
+  },
+  {
+   "v": 3.3,
+   "n": "TPS62007",
+   "c": null,
+   "tier": "search",
+   "d": "buck · VSSOP-10",
+   "i": 0.6,
+   "t": "buck",
+   "vim": 5.5
+  }
+ ],
+ "jelly": {
+  "lm2596": [
+   [
+    "L",
+    "33 µH ≥ 4 A",
+    null
+   ],
+   [
+    "D",
+    {
+     "d": "SS54 · 5 A 40 V Schottky, SMA",
+     "c": "C22452"
+    },
+    null
+   ],
+   [
+    "C-in",
+    {
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585"
+    },
+    "+ 0.1 µF C14663"
+   ],
+   [
+    "C-out",
+    {
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891"
+    },
+    "2×, or low-ESR bulk"
+   ]
+  ],
+  "lm2576": [
+   [
+    "L",
+    "100 µH ≥ 3 A",
+    null
+   ],
+   [
+    "D",
+    {
+     "d": "SS54 · 5 A 40 V Schottky, SMA",
+     "c": "C22452"
+    },
+    null
+   ],
+   [
+    "C-in",
+    {
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585"
+    },
+    null
+   ],
+   [
+    "C-out",
+    {
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891"
+    },
+    "datasheet wants ~1000 µF electrolytic — Extended"
+   ]
+  ],
+  "xl1509": [
+   [
+    "L",
+    "33 µH ≥ 3 A",
+    null
+   ],
+   [
+    "D",
+    {
+     "d": "SS34 · 3 A 40 V Schottky, SMA",
+     "c": "C8678"
+    },
+    null
+   ],
+   [
+    "C-in",
+    {
+     "d": "10 µF 1206 50 V X5R",
+     "c": "C13585"
+    },
+    null
+   ],
+   [
+    "C-out",
+    {
+     "d": "22 µF 1206 25 V X5R",
+     "c": "C12891"
+    },
+    "2×"
+   ]
+  ],
+  "tps620": [
+   [
+    "L",
+    "10 µH ≥ 1 A",
+    null
+   ],
+   [
+    "C-in",
+    {
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850"
+    },
+    null
+   ],
+   [
+    "C-out",
+    {
+     "d": "10 µF 0805 25 V X5R",
+     "c": "C15850"
+    },
+    null
+   ],
+   [
+    "C-fc",
+    {
+     "d": "100 nF 0603 50 V X7R",
+     "c": "C14663"
+    },
+    "FC pin"
+   ]
+  ],
+  "ldo1117": [
+   [
+    "C-in",
+    {
+     "d": "1 µF 0805 50 V",
+     "c": "C28323"
+    },
+    null
+   ],
+   [
+    "C-out",
+    {
+     "d": "10 µF tantalum 16 V",
+     "c": "C7171"
+    },
+    "AMS1117 wants ESR — tantalum"
+   ]
+  ],
+  "ldoSmall": [
+   [
+    "C-in",
+    {
+     "d": "1 µF 0805 50 V",
+     "c": "C28323"
+    },
+    null
+   ],
+   [
+    "C-out",
+    {
+     "d": "1 µF 0805 50 V",
+     "c": "C28323"
+    },
+    null
+   ]
+  ],
+  "ldo78m": [
+   [
+    "C-in",
+    {
+     "d": "1 µF 0805 50 V",
+     "c": "C28323"
+    },
+    "0.33 µF+ per datasheet"
+   ],
+   [
+    "C-out",
+    {
+     "d": "1 µF 0805 50 V",
+     "c": "C28323"
+    },
+    null
+   ]
+  ]
+ },
+ "support": {
+  "c100n": {
+   "d": "100 nF 0603 50 V X7R",
+   "c": "C14663"
+  },
+  "c100p": {
+   "d": "100 pF 0603 C0G",
+   "c": "C14858"
+  },
+  "c470p": {
+   "d": "470 pF 0603 X7R",
+   "c": "C1620"
+  },
+  "c10p": {
+   "d": "10 pF 0603 C0G",
+   "c": "C1634"
+  },
+  "c1u": {
+   "d": "1 µF 0805 50 V",
+   "c": "C28323"
+  },
+  "c10u25": {
+   "d": "10 µF 0805 25 V X5R",
+   "c": "C15850"
+  },
+  "c10u50": {
+   "d": "10 µF 1206 50 V X5R",
+   "c": "C13585"
+  },
+  "c22u25": {
+   "d": "22 µF 1206 25 V X5R",
+   "c": "C12891"
+  },
+  "t10u16": {
+   "d": "10 µF tantalum 16 V",
+   "c": "C7171"
+  },
+  "t100u6": {
+   "d": "100 µF tantalum 6.3 V",
+   "c": "C16133"
+  },
+  "ss34": {
+   "d": "SS34 · 3 A 40 V Schottky, SMA",
+   "c": "C8678"
+  },
+  "ss54": {
+   "d": "SS54 · 5 A 40 V Schottky, SMA",
+   "c": "C22452"
+  },
+  "b5819": {
+   "d": "B5819W · 1 A 40 V Schottky, SOD-123",
+   "c": "C8598"
+  }
+ }
+}
