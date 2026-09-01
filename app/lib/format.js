@@ -1,4 +1,4 @@
-import { h } from "./dom.js";
+import { Mustache } from "./mustache.js";
 
 export const parseRVal = (s) => {
   if (s.endsWith("M")) return parseFloat(s) * 1e6;
@@ -27,14 +27,48 @@ export const fmtV = (v, d = 3) => {
 export const partUrl = (c) => `https://jlcpcb.com/partdetail/${c}`;
 export const jlcSearch = (q) => `https://jlcpcb.com/parts/componentSearch?searchTxt=${encodeURIComponent(q)}`;
 
-export const codeLink = (c) => c
-  ? h("a", { class: "code", href: partUrl(c), target: "_blank", rel: "noreferrer", title: "JLCPCB part detail (tier + stock)" }, c)
-  : null;
+/* Small Mustache-rendered HTML atoms. Escaping is automatic (Mustache
+   escapes {{var}} by default), which is a real win over the old manual
+   template-literal string-building for anything sourced from live JLCPCB
+   data (part names, descriptions). */
+
+const CODE_LINK_TPL = `<a class="code" href="{{url}}" target="_blank" rel="noreferrer" title="JLCPCB part detail (tier + stock)">{{code}}</a>`;
+export const codeLink = (c) => c ? Mustache.render(CODE_LINK_TPL, { url: partUrl(c), code: c }) : "";
+
+const SEARCH_LINK_TPL = `<a class="code" href="{{url}}" target="_blank" rel="noreferrer"{{#stop}} data-stop-propagation{{/stop}}>{{label}}</a>`;
 export const searchLink = (q, label = "search", stop = false) =>
-  h("a", { class: "code", href: jlcSearch(q), target: "_blank", rel: "noreferrer", onclick: stop ? (e) => e.stopPropagation() : null }, label);
-export const tierChip = (t) =>
-  t === "Basic" ? h("span", { class: "tier basic" }, "Basic") :
-  t === "Extended" ? h("span", { class: "tier ext" }, "Extended") :
-  h("span", { class: "tier unk" }, "code unverified");
-export const fracEl = (top, bot) => h("span", { class: "frac" }, h("span", { class: "ft" }, top), h("span", { class: "fb" }, bot));
-export const sub = (t) => h("sub", {}, t);
+  Mustache.render(SEARCH_LINK_TPL, { url: jlcSearch(q), label, stop });
+
+const TIER_TPL = `<span class="tier {{cls}}">{{label}}</span>`;
+export const tierChip = (t) => Mustache.render(TIER_TPL,
+  t === "Basic" ? { cls: "basic", label: "Basic" } :
+  t === "Extended" ? { cls: "ext", label: "Extended" } :
+  { cls: "unk", label: "code unverified" });
+
+const FRAC_TPL = `<span class="frac"><span class="ft">{{{top}}}</span><span class="fb">{{{bot}}}</span></span>`;
+export const fracEl = (top, bot) => Mustache.render(FRAC_TPL, { top, bot });
+
+const SUB_TPL = `<sub>{{{t}}}</sub>`;
+export const sub = (t) => Mustache.render(SUB_TPL, { t });
+
+/* Family/variant detail-panel atoms (part of the family/version/SKU model:
+   a variant's electrical fields stay a single flat object, but its sourcing
+   is a real list now instead of one hardcoded LCSC code). */
+
+const SKU_TABLE_TPL = `<table class="skutable">
+<thead><tr><th>LCSC</th><th>package</th><th>manufacturer</th><th>tier</th></tr></thead>
+<tbody>{{#rows}}<tr><td>{{{codeHtml}}}</td><td>{{package}}</td><td>{{manufacturer}}</td><td>{{{tierHtml}}}</td></tr>{{/rows}}</tbody>
+</table>`;
+export const skuTable = (skus) => {
+  if (!skus || !skus.length) return `<div class="dim">No known JLCPCB stock for this variant — search manually.</div>`;
+  return Mustache.render(SKU_TABLE_TPL, {
+    rows: skus.map((s) => ({ codeHtml: codeLink(s.lcsc), package: s.package, manufacturer: s.manufacturer, tierHtml: tierChip(s.tier) })),
+  });
+};
+
+const SIBLINGS_TPL = `<div class="dim siblings">Family: {{#siblings}}{{^first}} · {{/first}}<button type="button" class="siblink" data-action="select-sibling" data-id="{{id}}">{{name}}</button>{{/siblings}}</div>`;
+export const siblingLinks = (siblings, selfId) => {
+  const others = (siblings || []).filter((v) => v.id !== selfId);
+  if (!others.length) return "";
+  return Mustache.render(SIBLINGS_TPL, { siblings: others.map((v, i) => ({ first: i === 0, id: v.id, name: v.name })) });
+};

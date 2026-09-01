@@ -1,5 +1,17 @@
 import { parseRVal } from "./format.js";
 
+/* families{} -> a flat list of variants, each tagged with its family id/name.
+   Used anywhere that needs to look a variant up by id or walk every variant
+   without caring about family grouping (part-picker's fit-filtering,
+   regulator-solver's "find the selected variant" lookup). */
+export function allVariants(families) {
+  const out = [];
+  for (const [familyId, fam] of Object.entries(families)) {
+    for (const v of fam.variants) out.push({ ...v, familyId, familyName: fam.name });
+  }
+  return out;
+}
+
 export function buildResistors(RDATA) {
   return Object.entries(RDATA)
     .map(([label, pkgs]) => ({ label, ohms: parseRVal(label), pkgs }))
@@ -18,9 +30,15 @@ export function jellyFor(JELLY, n) {
 }
 
 /* ============================ fit / topology ============================ */
-export function regFits(r, vt, vin, iout) {
-  if (vt <= r.minV) return false;
-  const lim = r.limits || "";
+/* Adjustable variants (kind "adjustable") -- set by a resistor divider off
+   referenceVoltage. Variants discovered from db.sqlite3 text-scraping
+   (needsReview: true) usually lack referenceVoltage/bottomResistorRange
+   entirely, since those can't be reliably parsed from a JLCPCB description --
+   treat them as never "fitting" the divider solver rather than crashing. */
+export function adjustableFits(v, vt, vin, iout) {
+  if (v.referenceVoltage == null || !v.bottomResistorRange || !v.topology) return false;
+  if (vt <= v.vOutMin) return false;
+  const lim = v.limits || "";
   const vinM = /Vin\s*([\d.]+)[–-]([\d.]+)\s*V/.exec(lim);
   if (vinM && (vin < parseFloat(vinM[1]) || vin > parseFloat(vinM[2]))) return false;
   const vinLe = /Vin\s*≤\s*([\d.]+)/.exec(lim);
@@ -31,41 +49,48 @@ export function regFits(r, vt, vin, iout) {
   if (voM && vt > parseFloat(voM[2])) return false;
   const voLe = /Vout\s*≤\s*([\d.]+)/.exec(lim);
   if (voLe && vt > parseFloat(voLe[1])) return false;
-  const canStepUp = r.boost || /boost|invert|buck.?boost/i.test(r.topo);
-  const canStepDown = !r.boost && (/buck|linear|ldo|invert/i.test(r.topo));
+  const canStepUp = v.isBoost || /boost|invert|buck.?boost/i.test(v.topology);
+  const canStepDown = !v.isBoost && (/buck|linear|ldo|invert/i.test(v.topology));
   const eq = Math.abs(vin - vt) < 0.3;
-  if (eq) { if (!(/buck.?boost|buck \/ boost|invert/i.test(r.topo))) return false; }
+  if (eq) { if (!(/buck.?boost|buck \/ boost|invert/i.test(v.topology))) return false; }
   else if (vin < vt) { if (!canStepUp) return false; }
   else { if (!canStepDown) return false; }
   if (vin > vt) {
-    if (r.topo.startsWith("Buck") && vin < vt + 1.2) return false;
-    if (r.topo.startsWith("Linear") && (vin < vt + 1.5 || (vin - vt) * iout > 5)) return false;
+    if (v.topology.startsWith("Buck") && vin < vt + 1.2) return false;
+    if (v.topology.startsWith("Linear") && (vin < vt + 1.5 || (vin - vt) * iout > 5)) return false;
   }
   return true;
 }
-export const topoTag = (r) =>
-  /buck.?boost|buck \/ boost/i.test(r.topo) ? "buck-boost" :
-  r.topo.startsWith("Linear") ? "LDO/linear" :
-  r.topo.startsWith("Buck") ? "buck" :
-  r.boost ? "boost" :
-  r.topo.startsWith("Shunt") ? "shunt ref" : "other";
+export const topoTag = (v) => {
+  const topology = v.topology || "";
+  return /buck.?boost|buck \/ boost/i.test(topology) ? "buck-boost" :
+    topology.startsWith("Linear") ? "LDO/linear" :
+    topology.startsWith("Buck") ? "buck" :
+    v.isBoost ? "boost" :
+    topology.startsWith("Shunt") ? "shunt ref" : v.needsReview ? "unverified" : "other";
+};
 
-/* fixed-voltage (non-adjustable) parts fit differently: no divider, just
+/* fixed-voltage (non-adjustable) variants fit differently: no divider, just
    current/power/Vin headroom against the part's own fixed rail. */
-export function fixedFit(f, vin, iout) {
-  const pdiss = f.t === "lin" ? Math.max(vin - f.v, 0) * iout : 0;
-  const iok = iout <= f.i, pok = f.t !== "lin" || pdiss <= f.pd, vok = vin <= f.vim;
-  return { ...f, pdiss, iok, pok, vok, ok: iok && pok && vok };
+export function fixedFits(v, vin, iout) {
+  const pdiss = v.converterType === "linear" ? Math.max(vin - v.vOutFixed, 0) * iout : 0;
+  const iok = iout <= v.iOutMax, pok = v.converterType !== "linear" || pdiss <= v.powerDissipationMax, vok = vin <= v.vInMax;
+  return { ...v, pdiss, iok, pok, vok, ok: iok && pok && vok };
 }
-export const railMatch = (f, vt) => vt > 0 && Math.abs(f.v - vt) / vt < 0.01;
+export const railMatch = (v, vt) => vt > 0 && Math.abs(v.vOutFixed - vt) / vt < 0.01;
+
+/* dispatcher used by part-picker.js so it doesn't need to branch on kind
+   itself when just filtering the family/variant list down to "fits". */
+export const variantFits = (v, vt, vin, iout) =>
+  v.kind === "fixed" ? railMatch(v, vt) && fixedFits(v, vin, iout).ok : adjustableFits(v, vt, vin, iout);
 
 /* ============================ solver ============================ */
-export const voutOf = (reg, ra, rb) => reg.vref * (1 + ra / rb) + (reg.iadjTyp || 0) * ra;
+export const voutOf = (reg, ra, rb) => reg.referenceVoltage * (1 + ra / rb) + (reg.adjustCurrentTypical || 0) * ra;
 
 export function worstCase(reg, ra, rb, tolPct, vtolPct) {
   const t = tolPct / 100, v = vtolPct / 100;
-  const hi = reg.vref * (1 + v) * (1 + (ra * (1 + t)) / (rb * (1 - t))) + (reg.iadjMax || 0) * ra * (1 + t);
-  const lo = reg.vref * (1 - v) * (1 + (ra * (1 - t)) / (rb * (1 + t)));
+  const hi = reg.referenceVoltage * (1 + v) * (1 + (ra * (1 + t)) / (rb * (1 - t))) + (reg.adjustCurrentMax || 0) * ra * (1 + t);
+  const lo = reg.referenceVoltage * (1 - v) * (1 + (ra * (1 - t)) / (rb * (1 + t)));
   return [lo, hi];
 }
 
@@ -85,7 +110,7 @@ function nearest(sorted, target) {
 }
 
 export function solve(RESISTORS, reg, vt, allowPairs) {
-  const inRange = RESISTORS.filter((r) => r.ohms >= reg.rbRange[0] && r.ohms <= reg.rbRange[1]);
+  const inRange = RESISTORS.filter((r) => r.ohms >= reg.bottomResistorRange[0] && r.ohms <= reg.bottomResistorRange[1]);
   const sols = [];
   const push = (raParts, mode, raOhms, rb) => {
     const v = voutOf(reg, raOhms, rb.ohms);
@@ -97,7 +122,7 @@ export function solve(RESISTORS, reg, vt, allowPairs) {
   if (allowPairs) {
     const vals = RESISTORS;
     for (const rb of inRange) {
-      const need = (vt - reg.vref) / (reg.vref / rb.ohms + (reg.iadjTyp || 0));
+      const need = (vt - reg.referenceVoltage) / (reg.referenceVoltage / rb.ohms + (reg.adjustCurrentTypical || 0));
       if (need <= 0) continue;
       for (const p of vals) {
         if (p.ohms >= need) break;
@@ -132,9 +157,9 @@ export function solve(RESISTORS, reg, vt, allowPairs) {
 
 export const LSTD = [1, 1.5, 2.2, 3.3, 4.7, 6.8, 10, 15, 22, 33, 47, 68, 100, 150, 220, 330];
 export function suggestL(reg, vt, vin, iout) {
-  if (!reg.fsw || reg.boost || reg.shunt || !vin || vin <= vt) return null;
+  if (!reg.switchingFreqHz || reg.isBoost || reg.isShunt || !vin || vin <= vt) return null;
   const dI = Math.max(0.3 * iout, 0.1);
-  const L = (vt * (vin - vt)) / (vin * reg.fsw * dI) * 1e6;
+  const L = (vt * (vin - vt)) / (vin * reg.switchingFreqHz * dI) * 1e6;
   const pick = LSTD.reduce((b, x) => (Math.abs(x - L) < Math.abs(b - L) ? x : b), LSTD[0]);
   const ipk = iout + dI / 2;
   return { pick, ipk };

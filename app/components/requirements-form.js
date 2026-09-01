@@ -1,22 +1,33 @@
-import { h } from "../lib/dom.js";
+import { Mustache } from "../lib/mustache.js";
+import { withFocusPreserved } from "../lib/focus.js";
 import { sub } from "../lib/format.js";
 
-class RequirementsForm extends HTMLElement {
-  update(props) { Object.assign(this, props); this.render(); }
+const TEMPLATE = `
+<div class="secHead">Requirements</div>
+<div class="grid2">
+  <label class="lbl">Target V{{{subOut}}}<input inputmode="decimal" data-focus-key="vtS" data-key="vtS" value="{{vtS}}"></label>
+  <label class="lbl">V{{{subIn}}}<input inputmode="decimal" data-focus-key="vinS" data-key="vinS" value="{{vinS}}"></label>
+  <label class="lbl">I{{{subOut}}} (A)<input inputmode="decimal" data-focus-key="ioutS" data-key="ioutS" value="{{ioutS}}"></label>
+</div>`;
 
-  emit(key, value) {
-    this.dispatchEvent(new CustomEvent("requirements-change", { detail: { key, value }, bubbles: true, composed: true }));
+class RequirementsForm extends HTMLElement {
+  connectedCallback() {
+    this.addEventListener("input", (e) => {
+      const key = e.target.dataset.key;
+      if (!key) return;
+      this.dispatchEvent(new CustomEvent("requirements-change", { detail: { key, value: e.target.value }, bubbles: true, composed: true }));
+    });
   }
 
+  update(props) { Object.assign(this, props); this.render(); }
+
   render() {
-    const num = (label, key) => h("label", { class: "lbl" }, ...label,
-      h("input", { inputmode: "decimal", value: this[key], "data-focus-key": key, oninput: (e) => this.emit(key, e.target.value) }));
-    this.replaceChildren(
-      h("div", { class: "secHead" }, "Requirements"),
-      h("div", { class: "grid2" },
-        num(["Target V", sub("OUT")], "vtS"),
-        num(["V", sub("IN")], "vinS"),
-        num(["I", sub("OUT"), " (A)"], "ioutS")));
+    withFocusPreserved(this, () => {
+      this.innerHTML = Mustache.render(TEMPLATE, {
+        vtS: this.vtS, vinS: this.vinS, ioutS: this.ioutS,
+        subOut: sub("OUT"), subIn: sub("IN"),
+      });
+    });
   }
 }
 customElements.define("requirements-form", RequirementsForm);

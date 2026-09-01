@@ -1,70 +1,121 @@
-import { h, frag } from "../lib/dom.js";
+import { Mustache } from "../lib/mustache.js";
+import { withFocusPreserved } from "../lib/focus.js";
 import { fmtOhm, fmtV, codeLink, sub } from "../lib/format.js";
 import { worstCase, partsStr, rbCode } from "../lib/solver.js";
 
-class ResistorPanel extends HTMLElement {
-  update(props) { Object.assign(this, props); this.render(); }
+const TEMPLATE = `
+<section class="panel">
+  <div class="ptitle row">
+    <span>Solutions <span class="dim">— top {{solCount}}, JLCPCB Basic 1 % resistors, ranked by error</span></span>
+    <button type="button" class="filterBtn" data-action="open-filters">⚙ Filters</button>
+  </div>
+  <table>
+    <thead><tr>
+      <th>{{raName}}</th><th>{{rbName}}</th><th>{{{voutHeaderHtml}}}</th>
+      <th>err</th><th>worst case ({{tol}} %)</th><th>±{{okPct}} %?</th>
+    </tr></thead>
+    <tbody>
+    {{#rows}}
+      <tr class="{{cls}}" data-action="select-row" data-index="{{index}}">
+        <td>
+          <span class="rv">{{raLabel}}</span>
+          {{#isPair}}<span class="pairtag">{{pairLabel}}</span>{{/isPair}}
+          <div class="codes">{{{raCodesHtml}}}</div>
+        </td>
+        <td><span class="rv">{{rbLabel}}</span><div class="codes">{{{rbCodeHtml}}}</div></td>
+        <td class="num">{{voutStr}}</td>
+        <td class="num {{errCls}}">{{errStr}}</td>
+        <td class="num dim">{{wcStr}}</td>
+        <td>{{{passChipHtml}}}</td>
+      </tr>
+    {{/rows}}
+    </tbody>
+  </table>
+  <div class="dim tnote">LCSC codes are 0603 where stocked as Basic; click a code to open it. Click a row to load it into the formula.</div>
+</section>
+<dialog id="filtersDlg" class="filtersDlg">
+  <div class="secHead">Tolerances — adjustable divider</div>
+  <div class="grid2">
+    <label class="lbl">R tolerance
+      <select data-action="tol">
+        {{#tolOptions}}<option value="{{value}}"{{#selected}} selected{{/selected}}>{{label}}</option>{{/tolOptions}}
+      </select>
+    </label>
+    <label class="lbl">{{{vrefTolLabelHtml}}}
+      <input inputmode="decimal" data-focus-key="vtolS" data-action="vtol" value="{{vtolValue}}">
+    </label>
+    <label class="lbl">Close enough ±%
+      <input inputmode="decimal" data-focus-key="okPct" data-action="okpct" value="{{okPct}}">
+    </label>
+  </div>
+  <label class="chk">
+    <input type="checkbox" data-action="pairs"{{#pairsChecked}} checked{{/pairsChecked}}>
+    Allow two-resistor combos (series / ∥) on {{raName}}
+  </label>
+  <div class="rbnote dim">{{rbNote}}</div>
+  <div class="dlgActions"><button type="button" data-action="close-filters">Done</button></div>
+</dialog>`;
 
+class ResistorPanel extends HTMLElement {
+  connectedCallback() {
+    this.addEventListener("click", (e) => {
+      if (e.target.id === "filtersDlg") { e.target.close(); return; }
+      const el = e.target.closest("[data-action]");
+      if (!el) return;
+      const action = el.dataset.action;
+      if (action === "select-row") this.emit("row-select", { index: Number(el.dataset.index) });
+      else if (action === "open-filters") this.emit("filters-open-change", { open: true });
+      else if (action === "close-filters") this.querySelector("#filtersDlg")?.close();
+    });
+    this.addEventListener("change", (e) => {
+      if (e.target.dataset.action === "tol") this.emit("tol-change", { value: parseFloat(e.target.value) });
+      else if (e.target.dataset.action === "pairs") this.emit("pairs-change", { checked: e.target.checked });
+    });
+    this.addEventListener("input", (e) => {
+      if (e.target.dataset.action === "vtol") this.emit("vtol-change", { value: e.target.value });
+      else if (e.target.dataset.action === "okpct") this.emit("okpct-change", { value: parseFloat(e.target.value) || 0 });
+    });
+  }
+
+  update(props) { Object.assign(this, props); this.render(); }
   emit(name, detail) { this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true })); }
 
   render() {
-    const { reg, sols, vtol, tol, okPct, sel, filtersOpen } = this;
-    this.replaceChildren(
-      h("section", { class: "panel" },
-        h("div", { class: "ptitle row" },
-          h("span", {}, "Solutions ", h("span", { class: "dim" }, `— top ${sols.length}, JLCPCB Basic 1 % resistors, ranked by error`)),
-          h("button", { type: "button", class: "filterBtn", onclick: () => this.emit("filters-open-change", { open: true }) }, "⚙ Filters")),
-        h("table", {},
-          h("thead", {}, h("tr", {},
-            h("th", {}, reg.raName), h("th", {}, reg.rbName), h("th", {}, frag("V", sub("OUT"))),
-            h("th", {}, "err"), h("th", {}, `worst case (${tol} %)`), h("th", {}, `±${okPct} %?`))),
-          h("tbody", {}, ...sols.map((x, i) => {
-            const w = worstCase(reg, x.raOhms, x.rb.ohms, tol, vtol);
-            const pass = Math.abs(x.err) <= okPct;
-            return h("tr", { class: i === sel ? "selrow" : "", onclick: () => this.emit("row-select", { index: i }) },
-              h("td", {}, h("span", { class: "rv" }, partsStr(x)),
-                x.mode !== "single" ? h("span", { class: "pairtag" }, x.mode === "series" ? "series" : "parallel") : null,
-                h("div", { class: "codes" }, ...x.raParts.map((p) => codeLink(rbCode(p))))),
-              h("td", {}, h("span", { class: "rv" }, x.rb.label), h("div", { class: "codes" }, codeLink(rbCode(x.rb)))),
-              h("td", { class: "num" }, fmtV(x.v)),
-              h("td", { class: "num " + (pass ? "ok" : "bad") }, `${x.err >= 0 ? "+" : ""}${x.err.toFixed(2)} %`),
-              h("td", { class: "num dim" }, `${fmtV(w[0])} … ${fmtV(w[1])}`),
-              h("td", {}, pass ? h("span", { class: "chip pass" }, "fits") : h("span", { class: "chip fail" }, "outside")));
-          }))),
-        h("div", { class: "dim tnote" }, "LCSC codes are 0603 where stocked as Basic; click a code to open it. Click a row to load it into the formula.")),
-      this.filtersDialog());
-
-    if (filtersOpen) {
+    withFocusPreserved(this, () => {
+      this.innerHTML = Mustache.render(TEMPLATE, this.viewModel());
       const dlg = this.querySelector("#filtersDlg");
-      if (dlg && !dlg.open) dlg.showModal();
-    }
+      if (dlg) {
+        dlg.addEventListener("close", () => this.emit("filters-open-change", { open: false }));
+        if (this.filtersOpen && !dlg.open) dlg.showModal();
+      }
+    });
   }
 
-  filtersDialog() {
-    const { reg, tol, okPct, vtolS, pairs } = this;
-    return h("dialog",
-      {
-        id: "filtersDlg", class: "filtersDlg",
-        onclick: (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); },
-        onclose: () => this.emit("filters-open-change", { open: false }),
-      },
-      h("div", { class: "secHead" }, "Tolerances — adjustable divider"),
-      h("div", { class: "grid2" },
-        h("label", { class: "lbl" }, "R tolerance",
-          h("select", { onchange: (e) => this.emit("tol-change", { value: parseFloat(e.target.value) }) },
-            ...[[0.1, "0.1 %"], [0.5, "0.5 %"], [1, "1 % (Basic)"], [5, "5 %"]].map(([v, t]) =>
-              h("option", { value: v, ...(tol === v ? { selected: true } : {}) }, t)))),
-        h("label", { class: "lbl" }, frag("V", sub("REF"), " tol %"),
-          h("input", { inputmode: "decimal", value: vtolS === null ? reg.vrefTol : vtolS, "data-focus-key": "vtolS", oninput: (e) => this.emit("vtol-change", { value: e.target.value }) })),
-        h("label", { class: "lbl" }, "Close enough ±%",
-          h("input", { inputmode: "decimal", value: okPct, "data-focus-key": "okPct", oninput: (e) => this.emit("okpct-change", { value: parseFloat(e.target.value) || 0 }) }))),
-      h("label", { class: "chk" },
-        h("input", { type: "checkbox", ...(pairs ? { checked: true } : {}), onchange: (e) => this.emit("pairs-change", { checked: e.target.checked }) }),
-        `Allow two-resistor combos (series / ∥) on ${reg.raName}`),
-      h("div", { class: "rbnote dim" },
-        `${reg.rbName} (${reg.rbPath}) constrained to ${fmtOhm(reg.rbRange[0])}–${fmtOhm(reg.rbRange[1])} — ${reg.rbHint}.`),
-      h("div", { class: "dlgActions" },
-        h("button", { type: "button", onclick: () => this.querySelector("#filtersDlg").close() }, "Done")));
+  viewModel() {
+    const { reg, sols, vtol, tol, okPct, sel, pairs, vtolS } = this;
+    const rows = sols.map((x, i) => {
+      const w = worstCase(reg, x.raOhms, x.rb.ohms, tol, vtol);
+      const pass = Math.abs(x.err) <= okPct;
+      return {
+        cls: i === sel ? "selrow" : "", index: i,
+        raLabel: partsStr(x), isPair: x.mode !== "single", pairLabel: x.mode === "series" ? "series" : "parallel",
+        raCodesHtml: x.raParts.map((p) => codeLink(rbCode(p))).join(""),
+        rbLabel: x.rb.label, rbCodeHtml: codeLink(rbCode(x.rb)),
+        voutStr: fmtV(x.v), errCls: pass ? "ok" : "bad", errStr: `${x.err >= 0 ? "+" : ""}${x.err.toFixed(2)} %`,
+        wcStr: `${fmtV(w[0])} … ${fmtV(w[1])}`,
+        passChipHtml: pass ? `<span class="chip pass">fits</span>` : `<span class="chip fail">outside</span>`,
+      };
+    });
+
+    return {
+      raName: reg.topResistorName, rbName: reg.bottomResistorName, tol, okPct, solCount: sols.length, rows,
+      voutHeaderHtml: `V${sub("OUT")}`, vrefTolLabelHtml: `V${sub("REF")} tol %`,
+      tolOptions: [[0.1, "0.1 %"], [0.5, "0.5 %"], [1, "1 % (Basic)"], [5, "5 %"]]
+        .map(([v, label]) => ({ value: v, label, selected: tol === v })),
+      vtolValue: vtolS === null ? reg.referenceVoltageTolerancePct : vtolS,
+      pairsChecked: pairs,
+      rbNote: `${reg.bottomResistorName} (${reg.bottomResistorPath}) constrained to ${fmtOhm(reg.bottomResistorRange[0])}–${fmtOhm(reg.bottomResistorRange[1])} — ${reg.bottomResistorHint}.`,
+    };
   }
 }
 customElements.define("resistor-panel", ResistorPanel);

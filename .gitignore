@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Local JLCPCB catalog snapshot used by tools/catalog_sync.py -- multi-GB,
+# not committed; point --database at your own copy.
+db.sqlite3
