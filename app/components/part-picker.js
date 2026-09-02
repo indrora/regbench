@@ -20,12 +20,14 @@ const FAMILY_GROUP_TPL = `<div class="famgroup">
 </div>`;
 
 const TEMPLATE = `
-<div class="secHead">Regulator</div>
-<div class="reglist">
-{{#fitGroups}}{{> group}}{{/fitGroups}}
-{{#hasOut}}<button class="regmore" data-action="toggle-showall">{{showMoreLabel}}</button>{{/hasOut}}
-{{#showAll}}{{#outGroups}}{{> group}}{{/outGroups}}{{/showAll}}
-</div>`;
+<details class="pickerDetails"{{#pickerOpen}} open{{/pickerOpen}}>
+  <summary class="secHead pickerSummary">Regulator<span class="dim"> — {{selectedName}}</span></summary>
+  <div class="reglist">
+  {{#fitGroups}}{{> group}}{{/fitGroups}}
+  {{#hasOut}}<button class="regmore" data-action="toggle-showall">{{showMoreLabel}}</button>{{/hasOut}}
+  {{#showAll}}{{#outGroups}}{{> group}}{{/outGroups}}{{/showAll}}
+  </div>
+</details>`;
 
 class PartPicker extends HTMLElement {
   connectedCallback() {
@@ -37,6 +39,20 @@ class PartPicker extends HTMLElement {
       if (action === "select") this.select(btn.dataset.id);
       else if (action === "toggle-showall") this.dispatchEvent(new CustomEvent("toggle-showall", { bubbles: true, composed: true }));
     });
+    /* "toggle" doesn't bubble, so this has to run in the capture phase to
+       catch it via delegation instead of re-binding to <details> on every
+       render. Modern engines also fire "toggle" when the open state is
+       merely re-established by innerHTML parsing (every render() call),
+       not just on a real user click -- without the guard below, each
+       render re-creates <details open>, which fires toggle, which
+       dispatches picker-open-change, which triggers another render: an
+       infinite loop. Comparing against this.pickerOpen (the value this
+       very render was just given) filters out that echo and only reacts
+       to an actual user-driven change. */
+    this.addEventListener("toggle", (e) => {
+      if (e.target.open === this.pickerOpen) return;
+      this.dispatchEvent(new CustomEvent("picker-open-change", { detail: { open: e.target.open }, bubbles: true, composed: true }));
+    }, true);
   }
 
   update(props) { Object.assign(this, props); this.render(); }
@@ -84,16 +100,18 @@ class PartPicker extends HTMLElement {
   }
 
   viewModel() {
-    const { families, vt, vin, iout, showAll } = this;
+    const { families, vt, vin, iout, showAll, selectedId, pickerOpen } = this;
     const variants = allVariants(families);
 
     const fits = variants.filter((v) => variantFits(v, vt, vin, iout));
     const out = variants.filter((v) => !variantFits(v, vt, vin, iout));
+    const selected = variants.find((v) => v.id === selectedId);
 
     return {
       fitGroups: this.groupByFamily(fits, false),
       outGroups: this.groupByFamily(out, true),
-      hasOut: out.length > 0, showAll,
+      hasOut: out.length > 0, showAll, pickerOpen,
+      selectedName: selected ? selected.name : "",
       showMoreLabel: (showAll ? "▴ hide " : "▾ show ") + out.length + " out-of-range",
     };
   }

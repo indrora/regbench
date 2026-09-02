@@ -1,111 +1,148 @@
-:root, body{--ink:#182430;--dim:#5c6b78;--line:#d7dde2;--panel:#ffffff;--bg:#f2f4f6;--blue:#1a5fb4;--green:#0e7a5f;--red:#b3261e;--selbg:#eef4fb;
-  background:var(--bg);color:var(--ink);min-height:100vh;padding:14px;
-  font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;font-size:13.5px;line-height:1.45;}
+:root, body{--ink:#262420;--dim:#6a6253;--line:#c8bfa9;--panel:#efeae0;--bg:#e7e1d3;--rust:#af2e1b;--olive:#6b631c;--red:#bf1b1b;--slate:#3b4b59;--amber:#975105;--selbg:#f1e2dc;--paper-white:#ffffff;
+  background:var(--bg);color:var(--ink);min-height:100vh;padding:16px;
+  font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.5;}
 *{box-sizing:border-box}
-header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:2px 2px 12px;}
-.hname{font-family:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;font-weight:700;letter-spacing:.06em;font-size:15px;}
+header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:2px 2px 16px;}
+.hname{margin:0;font-family:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;font-weight:700;letter-spacing:.06em;font-size:19px;}
 .hsub{color:var(--dim)}
-.cols{display:grid;grid-template-columns:308px 1fr;gap:12px;align-items:start;}
-@media(max-width:760px){.cols{grid-template-columns:1fr}}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;}
-.controls{display:flex;flex-direction:column;gap:12px;position:sticky;top:10px;}
-.lbl{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:12px;color:var(--dim)}
-.lbl sub{font-size:9px}
-select,input[type=text],input:not([type]){font:inherit;font-family:ui-monospace,Consolas,monospace;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink);width:100%;}
-input:focus,select:focus{outline:2px solid var(--blue);outline-offset:0}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.chk{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;cursor:pointer}
-.chk input{margin-top:2px;accent-color:var(--blue)}
-.regmeta{border-left:3px solid var(--line);padding-left:10px}
-.regline{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:600}
-.regchip{display:flex;gap:6px;align-items:center}
-.dim{color:var(--dim);font-size:12px}
+.cols{display:grid;grid-template-columns:352px 1fr;gap:16px;align-items:start;}
+@media(max-width:820px){.cols{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1.5px solid var(--line);border-radius:2px;padding:16px;}
+.controls{display:flex;flex-direction:column;gap:16px;}
+/* Sticky only makes sense beside a taller results column (the desktop
+   two-column layout, matching .cols' own breakpoint) -- in the single-
+   column mobile layout .controls is just the first block in normal flow,
+   and sticky there would pin it to the top of the viewport for the entire
+   rest of the page instead of scrolling away like everything else. */
+@media(min-width:821px){.controls{position:sticky;top:12px}}
+.lbl{display:flex;flex-direction:column;gap:5px;font-weight:600;font-size:14px;color:var(--dim);white-space:nowrap}
+.lbl sub{font-size:10px}
+.stack{display:flex;flex-direction:column;gap:12px}
+select,input[type=text],input[type=number],input:not([type]){font:inherit;font-size:15px;font-family:ui-monospace,Consolas,monospace;padding:8px 9px;border:1.5px solid var(--line);border-radius:2px;background:var(--paper-white);color:var(--ink);width:100%;}
+input:focus,select:focus{outline:2px solid var(--rust);outline-offset:0}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;cursor:pointer}
+.chk input{margin-top:2px;accent-color:var(--rust)}
+.regchip{display:flex;gap:10px;align-items:center}
+.dim{color:var(--dim);font-size:14px}
 .rbnote{border-top:1px dashed var(--line);padding-top:8px}
-.results{display:flex;flex-direction:column;gap:12px;min-width:0}
-.banner{background:#f2f8f4;border:1px solid #bcd9c9;border-radius:6px;padding:10px 14px;font-size:13px}
+.results{display:flex;flex-direction:column;gap:20px;min-width:0;container-type:inline-size}
+.section{border-top:1.5px solid var(--line);padding-top:14px}
+.section:first-child{border-top:0;padding-top:0}
+.banner{font-size:15px}
 .empty{color:var(--dim)}
-.hero .eq{font-family:ui-monospace,Consolas,monospace;}
-.eq.generic{font-size:15px;color:var(--dim);margin-bottom:10px}
-.eq.subst{font-size:19px;}
+.eq{font-family:ui-monospace,Consolas,monospace;}
+.eq.generic{font-size:16px;color:var(--dim);margin-bottom:10px}
+.eq.subst{font-size:20px;}
 .eq sub{font-size:.6em}
-.eqres b{font-size:1.15em}
-.ok{color:var(--green)}.bad{color:var(--red)}
+.ok{color:var(--olive)}.bad{color:var(--red)}
 .frac{display:inline-flex;flex-direction:column;text-align:center;vertical-align:middle;margin:0 4px;line-height:1.15}
 .frac .ft{border-bottom:1.5px solid currentColor;padding:0 5px}
 .frac .fb{padding:0 5px}
-.wcline{margin-top:10px;font-size:13px;border-top:1px dashed var(--line);padding-top:8px}
-.schem{width:100%;max-width:560px;height:auto;margin-top:10px;color:#9aa7b1}
-.schemtxt text{font:11px ui-monospace,Consolas,monospace;fill:var(--dim)}
-.schemcap{margin-top:2px}
-.ptitle{font-weight:700;margin-bottom:8px}
-table{width:100%;border-collapse:collapse;font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
-th{text-align:left;font-weight:600;color:var(--dim);border-bottom:1px solid var(--line);padding:4px 8px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11.5px}
-td{padding:6px 8px;border-bottom:1px solid #edf0f2;vertical-align:top}
+.heroGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:28px;align-items:start}
+/* Container query, not a viewport one: with the 352px sidebar showing, the
+   viewport can be well over 900px while .results itself -- what this grid
+   actually has to fit in -- is far narrower. Query the space this grid is
+   actually given, not the window. */
+@container (max-width:900px){.heroGrid{grid-template-columns:1fr}}
+.heroSchem{display:flex;flex-direction:column}
+.heroEq{display:flex;flex-direction:column}
+.wcline{margin-top:14px;font-size:14px;background:var(--bg);border:1px solid var(--line);border-radius:2px;padding:10px 14px}
+.schem{width:100%;max-width:560px;height:auto;margin-top:2px;color:#9a9078}
+.schemtxt text{font:12px ui-monospace,Consolas,monospace;fill:var(--dim)}
+.schemcap{margin-top:6px}
+.ptitle{margin:0 0 10px;font-weight:700;font-size:16px}
+.tableWrap{overflow-x:auto}
+.tableWrap table{min-width:640px}
+table{width:100%;border-collapse:collapse;font-family:ui-monospace,Consolas,monospace;font-size:14px}
+th{text-align:left;font-weight:600;color:var(--dim);border-bottom:1.5px solid var(--line);padding:5px 8px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:13px}
+td{padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 tbody tr{cursor:pointer}
-tbody tr:hover{background:#f7fafc}
-tr.selrow{background:var(--selbg);box-shadow:inset 3px 0 0 var(--blue)}
+tbody tr:hover{background:var(--panel)}
+tbody tr:focus-visible{outline:2px solid var(--rust);outline-offset:-2px}
+tr.selrow{background:var(--selbg);box-shadow:inset 3px 0 0 var(--rust)}
 .num{white-space:nowrap}
 .rv{font-weight:700}
-.pairtag{margin-left:6px;font-size:10px;color:var(--blue);border:1px solid #bcd2ec;border-radius:3px;padding:0 4px}
-.codes{display:flex;gap:6px;flex-wrap:wrap}
-.code{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--blue);text-decoration:none;border-bottom:1px dotted #9db8dc}
+.pairtag{margin-left:6px;font-size:12px;color:var(--dim)}
+.codes{display:flex;gap:8px;flex-wrap:wrap}
+.code{font-family:ui-monospace,Consolas,monospace;font-size:14px;color:var(--slate);text-decoration:none;border-bottom:1px dotted var(--slate)}
 .code:hover{border-bottom-style:solid}
-.chip{font-size:11px;border-radius:3px;padding:1px 6px;font-weight:600}
-.chip.pass{background:#e7f2ed;color:var(--green)}
-.chip.fail{background:#f9e9e8;color:var(--red)}
-.tier{font-size:10px;border-radius:3px;padding:1px 5px;font-weight:700;letter-spacing:.02em}
-.tier.basic{background:#e7f2ed;color:var(--green)}
-.tier.ext{background:#fdf3e3;color:#8a6116}
-.tier.unk{background:#eef0f2;color:var(--dim);font-weight:600}
-.tnote{margin-top:8px}
+.chip{font-size:14px;font-weight:700}
+.chip.pass{color:var(--olive)}
+.chip.pass::before{content:"● ";}
+.chip.fail{color:var(--red)}
+.chip.fail::before{content:"● ";}
+.tier{font-size:13px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.tier.basic{color:var(--olive)}
+.tier.ext{color:var(--amber)}
+.tier.unk{color:var(--dim);font-weight:600;text-transform:none}
+.tnote{margin-top:10px}
+/* 1.2 : 1, not an even split -- the parts list carries description text
+   (needs the room), the sourcing table is compact tabular data (doesn't). */
+.bomGrid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;align-items:start;margin-top:4px}
+@container (max-width:900px){.bomGrid{grid-template-columns:1fr}}
+.bomSkus .skutable{margin-top:0}
+.bomSkus.tableWrap table{min-width:480px}
 .bom{list-style:none;margin:0;padding:0}
-.bom li{display:grid;grid-template-columns:64px 1fr auto;gap:10px;padding:6px 0;border-bottom:1px solid #edf0f2;align-items:baseline}
+.bom li{display:grid;grid-template-columns:64px 1fr auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:baseline}
 .bom li:last-child{border-bottom:none}
-.role{font-family:ui-monospace,Consolas,monospace;font-weight:700;font-size:12px}
+.role{font-family:ui-monospace,Consolas,monospace;font-weight:700;font-size:14px}
 .bomcode{white-space:nowrap;display:flex;gap:6px;align-items:center}
-.notes{margin:10px 0 0;padding-left:18px;color:var(--dim);font-size:12.5px}
-.notes li{margin-bottom:3px}
-.warn{margin-top:10px;color:var(--red);font-weight:600;font-size:12.5px}
-.secHead{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim,#68737f);margin:12px 0 4px;font-weight:600}
+.notes{margin:10px 0 0;padding-left:18px;color:var(--dim);font-size:14px}
+.notes li{margin-bottom:4px}
+.warn{margin-top:10px;color:var(--red);font-weight:600;font-size:14px}
+.secHead{font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:14px 0 6px;font-weight:600}
 .secHead:first-child{margin-top:0}
-.moreRow td{color:var(--dim);cursor:pointer;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11.5px;text-align:center}
-.moreRow:hover td{color:var(--blue,#2f6fbf)}
-.dimrow{opacity:.62}
+.pickerDetails{margin:0}
+.pickerSummary{display:flex;align-items:center;gap:6px;cursor:pointer;list-style:none}
+.pickerSummary::-webkit-details-marker{display:none}
+.pickerSummary::before{content:"▾";font-size:12px}
+.pickerDetails[open]>.pickerSummary::before{content:"▴"}
+.pickerSummary:hover{color:var(--rust)}
 .reglist{display:flex;flex-direction:column;gap:2px;margin-top:2px}
-.regpick{display:grid;grid-template-columns:1fr auto;gap:0 8px;align-items:baseline;text-align:left;background:none;border:0;border-left:2px solid transparent;padding:5px 6px;cursor:pointer;font:inherit;border-radius:3px}
-.regpick:hover{background:var(--selbg,#eef3fb)}
-.regpick.on{background:var(--selbg,#eef3fb);border-left-color:var(--blue,#2f6fbf)}
+.regpick{display:grid;grid-template-columns:1fr auto;gap:0 8px;align-items:baseline;text-align:left;background:none;border:0;border-left:2px solid transparent;padding:7px 8px;cursor:pointer;font:inherit;border-radius:0}
+.regpick:hover{background:var(--selbg)}
+.regpick.on{background:var(--selbg);border-left-color:var(--rust)}
 .regpick.out{opacity:.55}
-.rp-name{font-weight:600;font-size:12.5px}
-.rp-pn{font-family:ui-monospace,Consolas,monospace;font-size:11px;text-align:right}
-.rp-meta{grid-column:1;display:flex;gap:6px;font-size:10.5px;color:var(--dim,#68737f)}
+.rp-name{font-weight:600;font-size:15px}
+.rp-pn{font-family:ui-monospace,Consolas,monospace;font-size:13px;text-align:right}
+.rp-meta{grid-column:1;display:flex;gap:8px;font-size:13px;color:var(--dim)}
 .rp-type{text-transform:uppercase;letter-spacing:.04em}
-.regmore{background:none;border:0;color:var(--dim);font-size:11px;text-align:center;cursor:pointer;padding:5px;margin-top:2px}
-.regmore:hover{color:var(--blue,#2f6fbf)}
+.regmore{background:none;border:0;color:var(--dim);font-size:14px;text-align:center;cursor:pointer;padding:6px}
+.regmore:hover{color:var(--rust)}
 .famgroup{display:flex;flex-direction:column;gap:2px}
-.famhead{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim,#68737f);padding:4px 6px 0}
-.regpick.needsreview{border-left-color:#c9971f}
-.skutable{width:100%;border-collapse:collapse;margin-top:10px;font-size:11.5px}
-.skutable th{text-align:left;color:var(--dim);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px 4px 0}
-.skutable td{padding:3px 8px 3px 0;border-top:1px solid #edf0f2}
+.famhead{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);padding:5px 8px 0}
+.regpick.needsreview{border-left-color:var(--amber)}
+.skutable{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+.skutable th{text-align:left;color:var(--dim);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px 5px 0}
+.skutable td{padding:4px 8px 4px 0;border-top:1px solid var(--line)}
 .siblings{margin-top:8px}
-.siblink{background:none;border:0;padding:0;color:var(--blue,#2f6fbf);text-decoration:underline dotted;cursor:pointer;font:inherit;font-size:inherit}
+.siblink{background:none;border:0;padding:0;color:var(--slate);text-decoration:underline dotted;cursor:pointer;font:inherit;font-size:inherit}
 .siblink:hover{text-decoration-style:solid}
-.regdetail .rd-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.rd-name{font-size:17px;font-weight:650;margin-right:8px}
-.rd-mfr{color:var(--dim);font-size:12px}
-.rd-spec{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font-size:12px;color:var(--dim)}
+.regdetail .rd-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:6px 10px}
+.rd-name{margin:0 8px 0 0;font-size:19px;font-weight:650;display:inline}
+.rd-mfr{color:var(--dim);font-size:14px}
+.rd-spec{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:8px;font-size:14px;color:var(--dim)}
 
-.ptitle.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.filterBtn{font:inherit;font-size:12px;background:none;border:1px solid var(--line);border-radius:4px;padding:4px 9px;cursor:pointer;color:var(--ink)}
-.filterBtn:hover{border-color:var(--blue);color:var(--blue)}
-dialog.filtersDlg{border:1px solid var(--line);border-radius:8px;padding:16px;max-width:420px;width:calc(100% - 32px);box-shadow:0 12px 32px rgba(0,0,0,.18)}
-dialog.filtersDlg::backdrop{background:rgba(20,26,32,.35)}
-.dlgActions{display:flex;justify-content:flex-end;margin-top:12px}
-.dlgActions button{font:inherit;font-size:12.5px;background:var(--blue);color:#fff;border:0;border-radius:4px;padding:6px 14px;cursor:pointer}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.filterBtn{font:inherit;font-size:14px;background:none;border:1.5px solid var(--line);border-radius:2px;padding:5px 11px;cursor:pointer;color:var(--ink)}
+.filterBtn:hover{border-color:var(--rust);color:var(--rust)}
+dialog.filtersDlg{border:1.5px solid var(--line);border-radius:2px;padding:18px;max-width:420px;width:calc(100% - 32px);box-shadow:0 12px 32px rgba(38,36,32,.18)}
+dialog.filtersDlg::backdrop{background:rgba(38,36,32,.35)}
+.dlgActions{display:flex;justify-content:flex-end;margin-top:14px}
+.dlgActions button{font:inherit;font-size:14px;background:var(--rust);color:var(--paper-white);border:0;border-radius:2px;padding:7px 16px;cursor:pointer}
 
-.fixedSec{margin-top:8px}
-.railRow{font-size:11.5px;line-height:1.5;margin:5px 0;padding:4px 6px;border-left:2px solid var(--line,#d5dbe3);font-weight:400}
-.railV{cursor:pointer;font-variant-numeric:tabular-nums}
-.railV:hover{text-decoration:underline}
-.jelly{margin-top:1px}
+/* Coarse pointer (touch): this app is used with a mouse most of the time,
+   so the fine-pointer sizes above stay compact -- but every real tap target
+   grows to a comfortable size specifically when a finger, not a cursor, is
+   doing the pointing. Inline text links get their hit area enlarged via
+   padding + matching negative margin so the surrounding text layout doesn't
+   shift; real buttons and rows just get more generous padding. */
+@media (pointer: coarse) {
+  .filterBtn{padding:12px 16px}
+  .dlgActions button{padding:12px 20px}
+  .regpick{padding:12px 8px}
+  .regmore{padding:12px}
+  .code{display:inline-block;padding:6px 2px;margin:-6px -2px}
+  .siblink{display:inline-block;padding:6px 2px;margin:-6px -2px}
+  .chk input{width:20px;height:20px}
+}

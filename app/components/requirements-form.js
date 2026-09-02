@@ -4,10 +4,10 @@ import { sub } from "../lib/format.js";
 
 const TEMPLATE = `
 <div class="secHead">Requirements</div>
-<div class="grid2">
-  <label class="lbl">Target V{{{subOut}}}<input inputmode="decimal" data-focus-key="vtS" data-key="vtS" value="{{vtS}}"></label>
-  <label class="lbl">V{{{subIn}}}<input inputmode="decimal" data-focus-key="vinS" data-key="vinS" value="{{vinS}}"></label>
-  <label class="lbl">I{{{subOut}}} (A)<input inputmode="decimal" data-focus-key="ioutS" data-key="ioutS" value="{{ioutS}}"></label>
+<div class="stack">
+  <label class="lbl"><span>Target V{{{subOut}}}</span><input type="number" step="0.1" name="vtS" data-focus-key="vtS" data-key="vtS" value="{{vtS}}"></label>
+  <label class="lbl"><span>V{{{subIn}}}</span><input type="number" step="0.1" name="vinS" data-focus-key="vinS" data-key="vinS" value="{{vinS}}"></label>
+  <label class="lbl"><span>I{{{subOut}}} (A)</span><input name="ioutS" inputmode="decimal" data-focus-key="ioutS" data-key="ioutS" value="{{ioutS}}"></label>
 </div>`;
 
 class RequirementsForm extends HTMLElement {

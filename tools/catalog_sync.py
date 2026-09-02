@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Repeatable sync between data/catalog.json's family/variant model and a
-local JLCPCB parts snapshot (a sqlite database shaped like db.sqlite3's
-`jlc_components` table: lcsc, mfr [manufacturer part number], manufacturer
-[company name], package, library_type [base=Basic/expand=Extended], stock,
-category, subcategory, description).
+local JLCPCB parts snapshot: a sqlite database with a `jlc_components` table
+(lcsc, mfr [manufacturer part number], manufacturer [company name], package,
+library_type [base=Basic/expand=Extended], stock, category, subcategory,
+description). This is jlcparts' own "source-db-v2" format (SOURCE_DB_FORMAT
+in yaqwsx/jlcparts' sourceDb.py) -- it's exactly what `updater fetch-db`
+downloads and extracts (as cache.sqlite3), no further conversion needed;
+--database accepts that file directly.
 
 This is a hand-run curation tool, not part of `just build` — the sqlite
 snapshot is an offline research aid, not a build-time dependency for the
@@ -34,7 +37,20 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = REPO_ROOT / "data" / "catalog.json"
-DEFAULT_DATABASE = REPO_ROOT / "db.sqlite3"
+
+# `updater fetch-db` writes its raw, directly-usable output to ./cache.sqlite3
+# by default; some setups instead keep a locally-named/renamed copy at
+# ./db.sqlite3. Prefer db.sqlite3 if both happen to exist (it's the more
+# specific, deliberately-placed name), otherwise use whichever is present so
+# a fresh `just fetchdb` works with zero extra flags.
+def _default_database_path():
+    db_path, cache_path = REPO_ROOT / "db.sqlite3", REPO_ROOT / "cache.sqlite3"
+    if db_path.exists() or not cache_path.exists():
+        return db_path
+    return cache_path
+
+
+DEFAULT_DATABASE = _default_database_path()
 
 # Subcategories worth loading at all -- narrows a 7M-row table down to the
 # few hundred thousand rows that could plausibly be a voltage regulator,
@@ -489,7 +505,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("mode", choices=["migrate", "sync", "discover"])
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG, help="path to data/catalog.json")
-    parser.add_argument("--database", type=Path, default=DEFAULT_DATABASE, help="path to the sqlite JLCPCB snapshot")
+    parser.add_argument("--database", type=Path, default=DEFAULT_DATABASE, help="path to the sqlite JLCPCB snapshot (the raw output of `updater fetch-db` works as-is; defaults to ./db.sqlite3 or ./cache.sqlite3, whichever exists)")
     parser.add_argument("--dry-run", action="store_true", help="print the report but don't write catalog.json")
     parser.add_argument("--prune-stale-skus", action="store_true", help="(sync) drop skus with stock==0 or no longer matching, instead of just flagging them")
     parser.add_argument("--top", type=int, default=15, help="(discover) how many new families to surface")
@@ -497,7 +513,7 @@ def main():
     args = parser.parse_args()
 
     if not args.database.exists():
-        sys.exit(f"database not found: {args.database}")
+        sys.exit(f"database not found: {args.database} -- run `just fetchdb` (or `updater fetch-db`) first, or pass --database explicitly")
 
     rows = load_regulator_rows(args.database)
     print(f"loaded {len(rows)} candidate rows from {args.database}", file=sys.stderr)

@@ -16,9 +16,9 @@ https://github.com/CDFER/jlcpcb-parts-database
 `updater fetch-db` is a separate command (not part of the `build` step
 above): it downloads and reassembles yaqwsx/jlcparts' full component
 database snapshot (a split ZIP containing cache.sqlite3, several GB) --
-the raw source that tools/catalog_sync.py's --database flag ultimately
-wants, though catalog_sync.py expects the further-migrated jlc_components/
-lcsc_components schema, not this raw cache.sqlite3 as-is.
+this is jlcparts' own "source-db-v2" format and is exactly what
+tools/catalog_sync.py's --database flag wants, no further conversion
+needed.
 """
 
 import argparse

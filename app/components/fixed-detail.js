@@ -1,11 +1,11 @@
 import { Mustache } from "../lib/mustache.js";
-import { codeLink, tierChip, fmtV, skuTable, siblingLinks } from "../lib/format.js";
+import { codeLink, tierChip, fmtV } from "../lib/format.js";
 import { railMatch } from "../lib/solver.js";
 
 const TEMPLATE = `
-<section class="panel regdetail">
+<section class="section regdetail">
   <div class="rd-head">
-    <div><span class="rd-name">{{name}}</span></div>
+    <div><h2 class="rd-name">{{name}}</h2></div>
     <span class="regchip">{{{tierHtml}}}{{{codeHtml}}}</span>
   </div>
   <div class="rd-spec">
@@ -19,23 +19,13 @@ const TEMPLATE = `
   </div>
   {{^onRail}}<div class="warn">This is a fixed {{vStr}} part — current target is {{vtStr}}, so it won't produce that rail. Pick a different target or regulator.</div>{{/onRail}}
   {{#needsReview}}<div class="warn">⚠ Auto-discovered from JLCPCB stock data, not datasheet-verified — output voltage / current figures are unconfirmed.</div>{{/needsReview}}
-  {{{skuTableHtml}}}
-  {{{siblingsHtml}}}
 </section>`;
 
 class FixedDetail extends HTMLElement {
-  connectedCallback() {
-    this.addEventListener("click", (e) => {
-      const btn = e.target.closest('[data-action="select-sibling"]');
-      if (!btn) return;
-      this.dispatchEvent(new CustomEvent("part-select", { detail: { id: btn.dataset.id }, bubbles: true, composed: true }));
-    });
-  }
-
   update(props) { Object.assign(this, props); this.render(); }
 
   render() {
-    const { f, vt, siblings } = this;
+    const { f, vt } = this;
     this.innerHTML = Mustache.render(TEMPLATE, {
       name: f.name, tierHtml: tierChip(f.bestTier), codeHtml: codeLink(f.bestLcsc),
       description: f.description, iOutMax: f.iOutMax, vInMax: f.vInMax, powerDissipationMax: f.powerDissipationMax,
@@ -45,8 +35,6 @@ class FixedDetail extends HTMLElement {
       vCls: f.vok ? "pass" : "fail", vLabel: f.vok ? "Vin OK" : "Vin too high",
       onRail: railMatch(f, vt), vStr: fmtV(f.vOutFixed), vtStr: fmtV(vt, 2),
       needsReview: !!f.needsReview,
-      skuTableHtml: skuTable(f.skus),
-      siblingsHtml: siblingLinks(siblings, f.id),
     });
   }
 }

@@ -1,19 +1,27 @@
 import { Mustache } from "../lib/mustache.js";
 import { fmtOhm, fmtV, fracEl, sub } from "../lib/format.js";
 
+/* The "hero" readout: schematic on the left, formula stack on the right,
+   both in one boxed panel -- the one deliberate card besides the sidebar. */
 const TEMPLATE = `
 <section class="panel hero">
-  <div class="eq generic">
-    V{{{subOut}}} = {{negSign}}V{{{subRef}}} · ( 1 + {{{fracRaRb}}} ){{#hasIadj}} + I{{{subIadj}}} · {{raName}}{{/hasIadj}}
+  <div class="heroGrid">
+    <div class="heroSchem">
+      <div class="schem-slot"></div>
+      <div class="dim schemcap">{{raName}}: {{raPath}} · {{rbName}}: {{rbPath}} · divider current ≈ {{dividerMa}} mA</div>
+    </div>
+    <div class="heroEq">
+      <div class="eq generic">
+        V{{{subOut}}} = {{negSign}}V{{{subRef}}} · ( 1 + {{{fracRaRb}}} ){{#hasIadj}} + I{{{subIadj}}} · {{raName}}{{/hasIadj}}
+      </div>
+      <div class="eq subst">
+        {{negSign}}{{vref}} V · ( 1 + {{{fracOhms}}} ){{#hasIadj}} + {{iadjTypStr}} µA · {{raOhmsStr}}{{/hasIadj}} = <b class="{{eqCls}}">{{negSign}}{{vStr}}</b>
+      </div>
+      <div class="wcline">
+        target {{negSign}}{{vtStr}} · error {{errStr}} % · with {{tol}} % resistors &amp; {{vtol}} % V{{{subRef}}}: <b>{{negSign}}{{wcLoStr}} … {{negSign}}{{wcHiStr}}</b>{{#showIadjMax}}<span class="dim"> (upper bound includes I{{{subAdj}}} max {{iadjMaxStr}} µA)</span>{{/showIadjMax}}
+      </div>
+    </div>
   </div>
-  <div class="eq subst">
-    {{negSign}}{{vref}} V · ( 1 + {{{fracOhms}}} ){{#hasIadj}} + {{iadjTypStr}} µA · {{raOhmsStr}}{{/hasIadj}} = <b class="{{eqCls}}">{{negSign}}{{vStr}}</b>
-  </div>
-  <div class="wcline">
-    target {{negSign}}{{vtStr}} · error {{errStr}} % · with {{tol}} % resistors &amp; {{vtol}} % V{{{subRef}}}: <b>{{negSign}}{{wcLoStr}} … {{negSign}}{{wcHiStr}}</b>{{#showIadjMax}}<span class="dim"> (upper bound includes I{{{subAdj}}} max {{iadjMaxStr}} µA)</span>{{/showIadjMax}}
-  </div>
-  <div class="schem-slot"></div>
-  <div class="dim schemcap">{{raName}}: {{raPath}} · {{rbName}}: {{rbPath}} · divider current ≈ {{dividerMa}} mA</div>
 </section>`;
 
 class SolverPanel extends HTMLElement {

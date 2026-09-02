@@ -4,11 +4,12 @@ import { fmtOhm, fmtV, codeLink, sub } from "../lib/format.js";
 import { worstCase, partsStr, rbCode } from "../lib/solver.js";
 
 const TEMPLATE = `
-<section class="panel">
-  <div class="ptitle row">
-    <span>Solutions <span class="dim">— top {{solCount}}, JLCPCB Basic 1 % resistors, ranked by error</span></span>
+<section class="section">
+  <div class="row">
+    <h2 class="ptitle">Solutions <span class="dim">— top {{solCount}}, JLCPCB Basic 1 % resistors, ranked by error</span></h2>
     <button type="button" class="filterBtn" data-action="open-filters">⚙ Filters</button>
   </div>
+  <div class="tableWrap">
   <table>
     <thead><tr>
       <th>{{raName}}</th><th>{{rbName}}</th><th>{{{voutHeaderHtml}}}</th>
@@ -16,7 +17,7 @@ const TEMPLATE = `
     </tr></thead>
     <tbody>
     {{#rows}}
-      <tr class="{{cls}}" data-action="select-row" data-index="{{index}}">
+      <tr class="{{cls}}" data-action="select-row" data-index="{{index}}" tabindex="0" role="button" aria-label="{{ariaLabel}}"{{#isSel}} aria-pressed="true"{{/isSel}}>
         <td>
           <span class="rv">{{raLabel}}</span>
           {{#isPair}}<span class="pairtag">{{pairLabel}}</span>{{/isPair}}
@@ -31,25 +32,26 @@ const TEMPLATE = `
     {{/rows}}
     </tbody>
   </table>
+  </div>
   <div class="dim tnote">LCSC codes are 0603 where stocked as Basic; click a code to open it. Click a row to load it into the formula.</div>
 </section>
 <dialog id="filtersDlg" class="filtersDlg">
   <div class="secHead">Tolerances — adjustable divider</div>
-  <div class="grid2">
-    <label class="lbl">R tolerance
-      <select data-action="tol">
+  <div class="stack">
+    <label class="lbl"><span>R tolerance</span>
+      <select name="tol" data-action="tol">
         {{#tolOptions}}<option value="{{value}}"{{#selected}} selected{{/selected}}>{{label}}</option>{{/tolOptions}}
       </select>
     </label>
-    <label class="lbl">{{{vrefTolLabelHtml}}}
-      <input inputmode="decimal" data-focus-key="vtolS" data-action="vtol" value="{{vtolValue}}">
+    <label class="lbl"><span>{{{vrefTolLabelHtml}}}</span>
+      <input name="vtolS" inputmode="decimal" data-focus-key="vtolS" data-action="vtol" value="{{vtolValue}}">
     </label>
-    <label class="lbl">Close enough ±%
-      <input inputmode="decimal" data-focus-key="okPct" data-action="okpct" value="{{okPct}}">
+    <label class="lbl"><span>Close enough ±%</span>
+      <input name="okPct" inputmode="decimal" data-focus-key="okPct" data-action="okpct" value="{{okPct}}">
     </label>
   </div>
   <label class="chk">
-    <input type="checkbox" data-action="pairs"{{#pairsChecked}} checked{{/pairsChecked}}>
+    <input type="checkbox" name="pairs" data-action="pairs"{{#pairsChecked}} checked{{/pairsChecked}}>
     Allow two-resistor combos (series / ∥) on {{raName}}
   </label>
   <div class="rbnote dim">{{rbNote}}</div>
@@ -66,6 +68,13 @@ class ResistorPanel extends HTMLElement {
       if (action === "select-row") this.emit("row-select", { index: Number(el.dataset.index) });
       else if (action === "open-filters") this.emit("filters-open-change", { open: true });
       else if (action === "close-filters") this.querySelector("#filtersDlg")?.close();
+    });
+    this.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const row = e.target.closest('tr[data-action="select-row"]');
+      if (!row) return;
+      e.preventDefault();
+      this.emit("row-select", { index: Number(row.dataset.index) });
     });
     this.addEventListener("change", (e) => {
       if (e.target.dataset.action === "tol") this.emit("tol-change", { value: parseFloat(e.target.value) });
@@ -96,14 +105,16 @@ class ResistorPanel extends HTMLElement {
     const rows = sols.map((x, i) => {
       const w = worstCase(reg, x.raOhms, x.rb.ohms, tol, vtol);
       const pass = Math.abs(x.err) <= okPct;
+      const voutStr = fmtV(x.v), errStr = `${x.err >= 0 ? "+" : ""}${x.err.toFixed(2)} %`;
       return {
-        cls: i === sel ? "selrow" : "", index: i,
+        cls: i === sel ? "selrow" : "", index: i, isSel: i === sel,
         raLabel: partsStr(x), isPair: x.mode !== "single", pairLabel: x.mode === "series" ? "series" : "parallel",
         raCodesHtml: x.raParts.map((p) => codeLink(rbCode(p))).join(""),
         rbLabel: x.rb.label, rbCodeHtml: codeLink(rbCode(x.rb)),
-        voutStr: fmtV(x.v), errCls: pass ? "ok" : "bad", errStr: `${x.err >= 0 ? "+" : ""}${x.err.toFixed(2)} %`,
+        voutStr, errCls: pass ? "ok" : "bad", errStr,
         wcStr: `${fmtV(w[0])} … ${fmtV(w[1])}`,
         passChipHtml: pass ? `<span class="chip pass">fits</span>` : `<span class="chip fail">outside</span>`,
+        ariaLabel: `${reg.topResistorName} ${partsStr(x)}${x.mode !== "single" ? ` (${x.mode === "series" ? "series" : "parallel"})` : ""}, ${reg.bottomResistorName} ${x.rb.label}: ${voutStr}, error ${errStr}, ${pass ? "fits" : "outside"} tolerance. Load into formula.`,
       };
     });
 

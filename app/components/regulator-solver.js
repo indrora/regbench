@@ -5,7 +5,7 @@
    Mustache (../lib/mustache.js). */
 import { Mustache } from "../lib/mustache.js";
 import { withFocusPreserved } from "../lib/focus.js";
-import { codeLink, searchLink, tierChip, fmtV, sub } from "../lib/format.js";
+import { codeLink, searchLink, tierChip, fmtV, sub, skuTable, siblingLinks } from "../lib/format.js";
 import { buildResistors, solve, worstCase, suggestL, fixedFits, jellyFor, allVariants } from "../lib/solver.js";
 import "./requirements-form.js";
 import "./part-picker.js";
@@ -17,7 +17,7 @@ import "./support-bom.js";
 
 const SHELL_TPL = `
 <header>
-  <div class="hname">{{title}}</div>
+  <h1 class="hname">{{title}}</h1>
   <div class="hsub">{{subtitle}}</div>
 </header>
 <div class="cols">
@@ -28,8 +28,8 @@ const SHELL_TPL = `
   <main class="results">{{#sections}}{{{tagHtml}}}{{/sections}}</main>
 </div>`;
 
-const BANNER_TPL = `<div class="banner" style="border-color:var(--red,#c0392b)"><b>⚠ Over-rated:</b> you asked for {{iout}} A but the {{name}} is a {{amax}} A part ({{limits}}). Pick something bigger — e.g. TPS5430 {{{c9864}}} (Basic, 3 A) or TPS54560B {{{c1850354}}} (Extended, 5 A).</div>`;
-const EMPTY_TPL = `<div class="panel empty">{{msg}}</div>`;
+const BANNER_TPL = `<div class="section banner"><b class="bad">⚠ Over-rated:</b> you asked for {{iout}} A but the {{name}} is a {{amax}} A part ({{limits}}). Pick something bigger — e.g. <button type="button" class="siblink" data-action="pick-bigger" data-id="tps5430">TPS5430</button> {{{c9864}}} (Basic, 3 A) or <button type="button" class="siblink" data-action="pick-bigger" data-id="tps54560">TPS54560B</button> {{{c1850354}}} (Extended, 5 A).</div>`;
+const EMPTY_TPL = `<div class="section empty">{{msg}}{{{actionHtml}}}</div>`;
 const IC_ROW_TPL = `{{name}} <span class="dim">· {{pkgNote}}</span>`;
 const SUPPORT_ROW_TPL = `{{d}}{{#note}} <span class="dim">· {{note}}</span>{{/note}}`;
 const L_ROW_TPL = `≈ {{pick}} µH, I{{{subSat}}} > {{ipk}} A <span class="dim">· from V{{{subIn}}} {{vin}} V, {{fsw}} kHz{{fswNote}}, 30 % ripple</span>`;
@@ -44,6 +44,11 @@ class RegulatorSolver extends HTMLElement {
       vtS: "5", vinS: "12", ioutS: "1",
       tol: 1, okPct: 2, pairs: true, vtolS: null,
       sel: 0, showAll: false, filtersOpen: false,
+      /* Open by default only where the sidebar sits beside the results
+         column (matches .cols' own 820px breakpoint) -- below that, the
+         part list would otherwise push the schematic/formula/solutions
+         well below the fold before a narrow-viewport user ever sees them. */
+      pickerOpen: window.matchMedia("(min-width: 821px)").matches,
     };
     this.data = null;
   }
@@ -57,11 +62,99 @@ class RegulatorSolver extends HTMLElement {
       return;
     }
     this.RESISTORS = buildResistors(this.data.resistors);
+    Object.assign(this.state, this.readHash());
+    history.replaceState(null, "", this.buildHash(this.state));
+    window.addEventListener("popstate", () => this.restoreFromHash());
     this.wireEvents();
     this.render();
   }
 
+  /* URL state -- the whole point is that the address bar always reflects
+     what's on screen closely enough to copy-paste and get the same page
+     back: which part, which resistor solution, and the requirement/filter
+     values that produced it. Every state change keeps the hash in sync via
+     history.replaceState (no back-stack growth -- typing shouldn't fight
+     the Back button). Only an explicit "link" click -- picking a part/
+     sibling, or a specific resistor-solution row -- gets a real
+     history.pushState entry, via navigate() instead of set(). */
+  static #DEFAULTS = { selectedId: "lm317", sel: 0, vtS: "5", vinS: "12", ioutS: "1", tol: 1, okPct: 2, pairs: true, vtolS: null };
+
+  buildHash(state) {
+    const p = new URLSearchParams();
+    p.set("id", state.selectedId);
+    p.set("sel", String(state.sel));
+    p.set("vt", state.vtS);
+    p.set("vin", state.vinS);
+    p.set("iout", state.ioutS);
+    p.set("tol", String(state.tol));
+    p.set("ok", String(state.okPct));
+    p.set("pairs", state.pairs ? "1" : "0");
+    if (state.vtolS !== null) p.set("vtol", state.vtolS);
+    return "#" + p.toString();
+  }
+
+  readHash() {
+    const D = RegulatorSolver.#DEFAULTS;
+    const p = new URLSearchParams(location.hash.replace(/^#/, ""));
+    const num = (key, fallback) => p.has(key) ? (parseFloat(p.get(key)) || fallback) : fallback;
+    return {
+      selectedId: p.get("id") || D.selectedId,
+      sel: p.has("sel") ? (parseInt(p.get("sel"), 10) || 0) : D.sel,
+      vtS: p.get("vt") ?? D.vtS,
+      vinS: p.get("vin") ?? D.vinS,
+      ioutS: p.get("iout") ?? D.ioutS,
+      tol: num("tol", D.tol),
+      okPct: num("ok", D.okPct),
+      pairs: p.has("pairs") ? p.get("pairs") === "1" : D.pairs,
+      vtolS: p.has("vtol") ? p.get("vtol") : D.vtolS,
+    };
+  }
+
+  restoreFromHash() {
+    Object.assign(this.state, this.readHash());
+    this.render();
+  }
+
+  /* Keeps the URL live-synced without touching the back-stack. */
+  set(patch) {
+    Object.assign(this.state, patch);
+    const hash = this.buildHash(this.state);
+    if (hash !== location.hash) history.replaceState(null, "", hash);
+    this.render();
+  }
+
+  /* Same as set(), but for "click a link" actions -- pushes a real,
+     back-navigable history entry instead of replacing in place. */
+  navigate(patch) {
+    Object.assign(this.state, patch);
+    const hash = this.buildHash(this.state);
+    if (hash !== location.hash) history.pushState(null, "", hash);
+    this.render();
+  }
+
   wireEvents() {
+    /* Delegated handler for the recovery-message action links: the
+       over-rated banner's "pick something bigger" suggestions, and the
+       empty states' "try {value}"/"try wider tolerance" one-click fixes.
+       Each dispatches the same event its own dedicated control already
+       triggers (part-select, requirements-change, okpct-change) rather than
+       mutating state directly, so there's one source of truth per field.
+       Action names are deliberately distinct from every child component's
+       own vocabulary (select, select-row, select-sibling, tol, vtol, okpct,
+       pairs, open/close-filters, toggle-showall) -- those clicks bubble up
+       to this same root listener, and colliding names would double-fire. */
+    this.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-action]");
+      if (!btn) return;
+      const action = btn.dataset.action;
+      if (action === "pick-bigger") {
+        this.dispatchEvent(new CustomEvent("part-select", { detail: { id: btn.dataset.id }, bubbles: true, composed: true }));
+      } else if (action === "set-target") {
+        this.dispatchEvent(new CustomEvent("requirements-change", { detail: { key: "vtS", value: btn.dataset.value }, bubbles: true, composed: true }));
+      } else if (action === "try-wider-tolerance") {
+        this.dispatchEvent(new CustomEvent("okpct-change", { detail: { value: parseFloat(btn.dataset.value) }, bubbles: true, composed: true }));
+      }
+    });
     this.addEventListener("requirements-change", (e) => {
       const { key, value } = e.detail;
       const patch = { [key]: value };
@@ -69,18 +162,17 @@ class RegulatorSolver extends HTMLElement {
       this.set(patch);
     });
     this.addEventListener("part-select", (e) => {
-      this.set({ selectedId: e.detail.id, sel: 0, vtolS: null });
+      this.navigate({ selectedId: e.detail.id, sel: 0, vtolS: null });
     });
     this.addEventListener("toggle-showall", () => this.set({ showAll: !this.state.showAll }));
-    this.addEventListener("row-select", (e) => this.set({ sel: e.detail.index }));
+    this.addEventListener("row-select", (e) => this.navigate({ sel: e.detail.index }));
     this.addEventListener("tol-change", (e) => this.set({ tol: e.detail.value }));
     this.addEventListener("vtol-change", (e) => this.set({ vtolS: e.detail.value }));
     this.addEventListener("okpct-change", (e) => this.set({ okPct: e.detail.value }));
     this.addEventListener("pairs-change", (e) => this.set({ pairs: e.detail.checked, sel: 0 }));
     this.addEventListener("filters-open-change", (e) => this.set({ filtersOpen: e.detail.open }));
+    this.addEventListener("picker-open-change", (e) => this.set({ pickerOpen: e.detail.open }));
   }
-
-  set(patch) { Object.assign(this.state, patch); this.render(); }
 
   /* derived snapshot for the current state */
   derive() {
@@ -121,7 +213,7 @@ class RegulatorSolver extends HTMLElement {
       this.querySelector("requirements-form").update({ vtS: S.vtS, vinS: S.vinS, ioutS: S.ioutS });
       this.querySelector("part-picker").update({
         families: D.families, vt: R.vt, vin: R.vin, iout: R.iout,
-        showAll: S.showAll, selectedId: S.selectedId,
+        showAll: S.showAll, selectedId: S.selectedId, pickerOpen: S.pickerOpen,
       });
       for (const sec of sections) {
         if (sec.tag) this.querySelector(sec.tag)?.update(sec.props);
@@ -136,14 +228,14 @@ class RegulatorSolver extends HTMLElement {
     const sections = [];
 
     if (R.kind === "fixed") {
-      sections.push({ tag: "fixed-detail", tagHtml: "<fixed-detail></fixed-detail>", props: { f: R.f, vt: R.vt, siblings: D.families[R.f.familyId].variants } });
+      sections.push({ tag: "fixed-detail", tagHtml: "<fixed-detail></fixed-detail>", props: { f: R.f, vt: R.vt } });
       sections.push({ tag: "support-bom", tagHtml: "<support-bom></support-bom>", props: { ...this.fixedBomRows(R, D), title: "Around this part " } });
       return sections;
     }
 
     const { reg, vt, vin, iout, vtol, sols, s, wc, L, amax, overI, canSolve } = R;
     sections.push({ tag: "regulator-detail", tagHtml: "<regulator-detail></regulator-detail>", props: {
-      reg, vtolDisplay: S.vtolS === null ? reg.referenceVoltageTolerancePct : S.vtolS, siblings: D.families[reg.familyId].variants,
+      reg, vtolDisplay: S.vtolS === null ? reg.referenceVoltageTolerancePct : S.vtolS,
     } });
 
     if (overI) {
@@ -156,20 +248,34 @@ class RegulatorSolver extends HTMLElement {
       sections.push({ tagHtml: Mustache.render(EMPTY_TPL, {
         msg: "This variant's reference voltage / divider fields aren't verified yet — see the ⚠ notice above. Nothing to solve until that's confirmed.",
       }) });
+      sections.push({ tag: "support-bom", tagHtml: "<support-bom></support-bom>", props: this.regBomRows(R, D) });
     } else if (vt <= reg.vOutMin) {
+      /* Smallest step strictly above the floor, not a "nice" rail voltage --
+         this is a nudge past the wall, not an engineering recommendation. */
+      const suggested = Math.ceil(reg.vOutMin * 10 + 1) / 10;
       sections.push({ tagHtml: Mustache.render(EMPTY_TPL, {
-        msg: `This part can't regulate below its ${fmtV(reg.referenceVoltage)} reference${reg.isShunt ? "" : " (plus headroom)"}. Enter a target above ${fmtV(reg.vOutMin)}.`,
+        msg: `This part can't regulate below its ${fmtV(reg.referenceVoltage)} reference${reg.isShunt ? "" : " (plus headroom)"}. Enter a target above ${fmtV(reg.vOutMin)} — `,
+        actionHtml: `<button type="button" class="siblink" data-action="set-target" data-value="${suggested}">try ${fmtV(suggested, 2)}</button>.`,
       }) });
+      sections.push({ tag: "support-bom", tagHtml: "<support-bom></support-bom>", props: this.regBomRows(R, D) });
     } else if (!s) {
-      sections.push({ tagHtml: Mustache.render(EMPTY_TPL, { msg: "No solutions in range — widen the close-enough band or check the target." }) });
+      const canWiden = S.okPct < 5;
+      sections.push({ tagHtml: Mustache.render(EMPTY_TPL, {
+        msg: `No solutions within ±${S.okPct} % — check the target${canWiden ? ", or " : " or widen the close-enough band."}`,
+        actionHtml: canWiden ? `<button type="button" class="siblink" data-action="try-wider-tolerance" data-value="5">try ±5 %</button>.` : "",
+      }) });
+      sections.push({ tag: "support-bom", tagHtml: "<support-bom></support-bom>", props: this.regBomRows(R, D) });
     } else {
+      /* hero (schematic + formula) leads, then the ranked solutions table,
+         then the BOM -- matches the reference layout: readout up top,
+         options right under it, sourcing/passives last. */
       sections.push({ tag: "solver-panel", tagHtml: "<solver-panel></solver-panel>", props: { reg, s, wc, vt, vtol, tol: S.tol, okPct: S.okPct } });
       sections.push({ tag: "resistor-panel", tagHtml: "<resistor-panel></resistor-panel>", props: {
         reg, sols, vtol, tol: S.tol, okPct: S.okPct, sel: S.sel, pairs: S.pairs, vtolS: S.vtolS, filtersOpen: S.filtersOpen,
       } });
+      sections.push({ tag: "support-bom", tagHtml: "<support-bom></support-bom>", props: this.regBomRows(R, D) });
     }
 
-    sections.push({ tag: "support-bom", tagHtml: "<support-bom></support-bom>", props: this.regBomRows(R, D) });
     return sections;
   }
 
@@ -202,7 +308,11 @@ class RegulatorSolver extends HTMLElement {
     if (reg.notes && reg.notes.length) extra.push(Mustache.render(NOTES_TPL, { notes: reg.notes }));
     if (reg.isBoost && R.vin >= R.vt && R.vt > 0) extra.push(Mustache.render(BOOST_WARN_TPL, { subIn: sub("IN"), subOut: sub("OUT") }));
 
-    return { rows, extra };
+    return {
+      rows, extra,
+      skuTableHtml: skuTable(reg.skus),
+      siblingsHtml: siblingLinks(D.families[reg.familyId].variants, reg.id),
+    };
   }
 
   fixedBomRows(R, D) {
@@ -215,7 +325,11 @@ class RegulatorSolver extends HTMLElement {
         codeHtml: typeof p === "string" ? searchLink(p.split(" ≥")[0] + " inductor", "search JLC") : codeLink(p.c),
       })),
     ];
-    return { rows };
+    return {
+      rows,
+      skuTableHtml: skuTable(f.skus),
+      siblingsHtml: siblingLinks(D.families[f.familyId].variants, f.id),
+    };
   }
 }
 customElements.define("regulator-solver", RegulatorSolver);
