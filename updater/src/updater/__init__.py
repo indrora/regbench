@@ -188,11 +188,22 @@ def _reassemble_split_zip(volume_paths, combined_path):
         eocd_rel = tail.rfind(EOCD)
         if eocd_rel == -1:
             raise ValueError(f"{combined_path}: no End Of Central Directory record after concatenation")
+        _disk_no, disk_start, _n_this, _n_total, _cd_size, cd_off_rel = struct.unpack(
+            "<HHHHII", tail[eocd_rel + 4:eocd_rel + 20])
+        # The classic EOCD's cd_offset is relative to the start of whichever
+        # disk holds the central directory, not the combined file -- this
+        # must be rebased to absolute regardless of whether ZIP64 records
+        # are present (small archives, like this one currently is, have no
+        # ZIP64 locator at all, so this is the only place the offset gets
+        # fixed up for them).
+        cd_off_abs = disk_start_offset[disk_start] + cd_off_rel
         f.seek(tail_base + eocd_rel + 4)
         f.write(struct.pack("<HH", 0, 0))  # disk_no, disk_start
+        f.seek(tail_base + eocd_rel + 16)
+        f.write(struct.pack("<I", cd_off_abs))
 
         loc_rel = tail.rfind(Z64_LOC)
-        if loc_rel != -1:  # ZIP64 -- large member, always true for cache.sqlite3
+        if loc_rel != -1:  # ZIP64 -- used once the archive is large enough
             loc_abs = tail_base + loc_rel
             disk_with_eocd, z64_off_rel, _total_disks = struct.unpack("<IQI", tail[loc_rel + 4:loc_rel + 20])
             z64_off_abs = disk_start_offset[disk_with_eocd] + z64_off_rel
