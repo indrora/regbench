@@ -6,34 +6,31 @@ support parts) plus a resistor stock map (which LCSC part number stocks a
 given decade value in a given package). The catalog is hand-maintained under
 data/ (variant SKU data is refreshed offline via tools/catalog_sync.py, not
 at build time); the resistor stock map changes constantly because JLCPCB
-inventory changes constantly, so it's fetched live here and never committed.
+inventory changes constantly, so it's derived fresh from a local snapshot
+of yaqwsx/jlcparts' database here and never committed.
 
-Stock data comes from CDFER/jlcpcb-parts-database, a community mirror of
-the official JLCPCB catalog (itself built from yaqwsx/jlcparts) published
-as a CSV of basic + preferred parts on GitHub Pages. See:
-https://github.com/CDFER/jlcpcb-parts-database
+(Formerly this fetched a derived CSV from CDFER/jlcpcb-parts-database, but
+that pipeline started silently dropping the entire Resistors category --
+querying `updater fetch-db`'s own sqlite snapshot directly removes that
+single point of failure, since `build` already needs it for catalog sync.)
 
-`updater fetch-db` is a separate command (not part of the `build` step
-above): it downloads and reassembles yaqwsx/jlcparts' full component
-database snapshot (a split ZIP containing cache.sqlite3, several GB) --
-this is jlcparts' own "source-db-v2" format and is exactly what
-tools/catalog_sync.py's --database flag wants, no further conversion
-needed.
+`updater fetch-db` downloads and reassembles yaqwsx/jlcparts' full
+component database snapshot (a split ZIP containing cache.sqlite3, roughly
+a gigabyte) -- this is jlcparts' own "source-db-v2" format and is exactly
+what `build --database` and tools/catalog_sync.py's --database flag want,
+no further conversion needed.
 """
 
 import argparse
-import csv
 import datetime
-import io
 import json
+import sqlite3
 import struct
 import sys
 import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
-
-STOCK_CSV_URL = "https://cdfer.github.io/jlcpcb-parts-database/jlcpcb-components-basic-preferred.csv"
 
 # The app's solver only ever asks for four packages; anything else (arrays,
 # odd form factors) isn't useful as a discrete divider resistor.
@@ -46,29 +43,44 @@ JLCPARTS_BASE_URL = "https://yaqwsx.github.io/jlcparts/data"
 CACHE_MEMBER_NAME = "cache.sqlite3"
 
 
-def fetch_resistor_stock(csv_url=STOCK_CSV_URL):
-    """Returns {value_label: {package: lcsc_code}} for in-stock 1% chip resistors."""
-    with urllib.request.urlopen(csv_url) as resp:
-        text = io.TextIOWrapper(resp, encoding="utf-8")
-        rows = list(csv.DictReader(text))
+def _default_database_path():
+    """Mirrors tools/catalog_sync.py's default: prefer a deliberately-placed
+    ./db.sqlite3 over the raw ./cache.sqlite3 `fetch-db` writes by default,
+    so both tools agree on which snapshot is "the" local one."""
+    db_path, cache_path = REPO_ROOT / "db.sqlite3", REPO_ROOT / CACHE_MEMBER_NAME
+    if db_path.exists() or not cache_path.exists():
+        return db_path
+    return cache_path
+
+
+def fetch_resistor_stock(database_path):
+    """Returns {value_label: {package: lcsc_code}} for in-stock 1% chip
+    resistors, read from a local jlcparts sqlite snapshot (see fetch-db)."""
+    if not database_path.exists():
+        raise FileNotFoundError(
+            f"{database_path} not found -- run `just fetchdb` (or `updater fetch-db -o {database_path}`) first")
+
+    con = sqlite3.connect(database_path)
+    try:
+        rows = con.execute(
+            "SELECT lcsc, package, attributes FROM jlc_components "
+            "WHERE category = 'Resistors' AND subcategory = 'Chip Resistor - Surface Mount' AND stock > 0"
+        ).fetchall()
+    finally:
+        con.close()
 
     stock = {}
-    for row in rows:
-        if row.get("category") != "Resistors":
-            continue
-        if row.get("subcategory") != "Chip Resistor - Surface Mount":
-            continue
-        package = row.get("package")
+    for lcsc, package, attributes in rows:
         if package not in KNOWN_PACKAGES:
             continue
-        attrs = json.loads(row["attributes"] or "{}")
+        attrs = json.loads(attributes or "{}")
         if attrs.get("Tolerance") != "±1%":
             continue
         value = attrs.get("Resistance")
         if not value:
             continue
         label = value.replace("Ω", "")  # "2.2kΩ" -> "2.2k", matches app.js's parseRVal
-        stock.setdefault(label, {})[package] = "C" + row["lcsc"]  # CSV stores the bare LCSC number
+        stock.setdefault(label, {})[package] = f"C{lcsc}"
     return stock
 
 
@@ -79,7 +91,7 @@ def build_data(catalog, resistor_values, stock, fetched_on):
         print(f"note: {len(missing)} curated value(s) have no current JLCPCB stock: {', '.join(missing)}", file=sys.stderr)
 
     meta = dict(catalog["meta"])
-    meta["resistorSource"] = f"JLCPCB Basic/Extended stock (jlcparts snapshot via CDFER), fetched {fetched_on}"
+    meta["resistorSource"] = f"JLCPCB Basic/Extended stock (yaqwsx/jlcparts snapshot), fetched {fetched_on}"
 
     return {
         "meta": meta,
@@ -273,8 +285,8 @@ def cmd_build(args):
     catalog = json.loads((args.data_dir / "catalog.json").read_text())
     resistor_values = json.loads((args.data_dir / "resistor-values.json").read_text())
 
-    print(f"fetching JLCPCB resistor stock from {STOCK_CSV_URL}", file=sys.stderr)
-    stock = fetch_resistor_stock()
+    print(f"reading JLCPCB resistor stock from {args.database}", file=sys.stderr)
+    stock = fetch_resistor_stock(args.database)
 
     data = build_data(catalog, resistor_values, stock, datetime.date.today().isoformat())
 
@@ -294,9 +306,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_build = sub.add_parser("build", help="build dist/data.json from data/catalog.json + live resistor stock")
+    p_build = sub.add_parser("build", help="build dist/data.json from data/catalog.json + resistor stock from a local jlcparts snapshot")
     p_build.add_argument("-d", "--dist", required=True, type=Path, help="output directory to write data.json into")
     p_build.add_argument("--data-dir", type=Path, default=DATA_DIR, help="directory holding catalog.json and resistor-values.json")
+    p_build.add_argument("--database", type=Path, default=_default_database_path(), help="path to the sqlite JLCPCB snapshot (the raw output of `updater fetch-db` works as-is; defaults to ./db.sqlite3 or ./cache.sqlite3, whichever exists)")
     p_build.set_defaults(func=cmd_build)
 
     p_fetch = sub.add_parser("fetch-db", help="download + reassemble yaqwsx/jlcparts' cache.sqlite3 snapshot (raw source for tools/catalog_sync.py's upstream data)")
