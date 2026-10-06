@@ -8,6 +8,7 @@ import { withFocusPreserved } from "../lib/focus.js";
 import { codeLink, searchLink, tierChip, fmtV, sub, skuTable, siblingLinks } from "../lib/format.js";
 import { buildResistors, solve, worstCase, suggestL, fixedFits, jellyFor, allVariants } from "../lib/solver.js";
 import "./requirements-form.js";
+import "./live-result.js";
 import "./part-picker.js";
 import "./regulator-detail.js";
 import "./fixed-detail.js";
@@ -23,6 +24,7 @@ const SHELL_TPL = `
 <div class="cols">
   <aside class="panel controls">
     <requirements-form></requirements-form>
+    <live-result></live-result>
     <part-picker></part-picker>
   </aside>
   <main class="results">{{#sections}}{{{tagHtml}}}{{/sections}}</main>
@@ -203,6 +205,22 @@ class RegulatorSolver extends HTMLElement {
     return { kind: "reg", reg, vt, vin, iout, vtol, sols, s, wc, L, amax, overI, canSolve };
   }
 
+  /* The sidebar's live readout -- deliberately terse (a value + one status
+     word), never the multi-clause prose the main column can afford. */
+  liveResultProps(R, S) {
+    if (R.kind === "fixed") {
+      const { f } = R;
+      const fits = f.iok && f.pok && f.vok;
+      return { value: fmtV(f.vOutFixed), status: fits ? "fits" : "doesn't fit", cls: fits ? "ok" : "bad" };
+    }
+    const { reg, s } = R;
+    if (!R.canSolve) return { value: "—", status: "unverified part", cls: "" };
+    if (R.vt <= reg.vOutMin) return { value: "—", status: "target below minimum", cls: "" };
+    if (!s) return { value: "—", status: "no fit in range", cls: "" };
+    const pass = Math.abs(s.err) <= S.okPct;
+    return { value: fmtV(s.v), status: `${s.err >= 0 ? "+" : ""}${s.err.toFixed(2)} % error`, cls: pass ? "ok" : "bad" };
+  }
+
   render() {
     withFocusPreserved(this, () => {
       const S = this.state, D = this.data, R = this.derive();
@@ -211,6 +229,7 @@ class RegulatorSolver extends HTMLElement {
       this.innerHTML = Mustache.render(SHELL_TPL, { title: D.meta.title, subtitle: D.meta.subtitle, sections });
 
       this.querySelector("requirements-form").update({ vtS: S.vtS, vinS: S.vinS, ioutS: S.ioutS });
+      this.querySelector("live-result").update(this.liveResultProps(R, S));
       this.querySelector("part-picker").update({
         families: D.families, vt: R.vt, vin: R.vin, iout: R.iout,
         showAll: S.showAll, selectedId: S.selectedId, pickerOpen: S.pickerOpen,
