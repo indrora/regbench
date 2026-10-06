@@ -13,3 +13,7 @@ wheels/
 # not committed; point --database at your own copy.
 db.sqlite3
 tmp/
+
+# Impeccable skill's local config/cache/design-session state -- generated,
+# not a project artifact.
+.impeccable/
