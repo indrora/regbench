@@ -54,11 +54,18 @@ DEFAULT_DATABASE = _default_database_path()
 
 # Subcategories worth loading at all -- narrows a 7M-row table down to the
 # few hundred thousand rows that could plausibly be a voltage regulator,
-# before any per-family regex matching happens in Python.
+# before any per-family regex matching happens in Python. Also includes
+# rows with no subcategory at all: a growing slice of the live snapshot
+# (tens of thousands of rows) carries a blank category/subcategory despite
+# being real, in-stock parts -- e.g. XL1509A-5.0E1 -- and would otherwise
+# be silently dropped before the per-family regex ever runs. The regex
+# match itself is specific enough that pulling in the uncategorized rows
+# doesn't introduce false positives.
 SUBCATEGORY_FILTER = """
     subcategory LIKE '%Regulator%' OR subcategory LIKE '%LDO%'
     OR subcategory LIKE '%Dropout%' OR subcategory LIKE '%Voltage Reference%'
     OR subcategory LIKE '%DC-DC%' OR subcategory LIKE '%AC-DC%'
+    OR subcategory = ''
 """
 
 # ---------------------------------------------------------------------------
