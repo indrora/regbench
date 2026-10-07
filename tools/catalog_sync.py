@@ -1,26 +1,32 @@
 #!/usr/bin/env python3
-"""Repeatable sync between data/catalog.json's family/variant model and a
-local JLCPCB parts snapshot: a sqlite database with a `jlc_components` table
-(lcsc, mfr [manufacturer part number], manufacturer [company name], package,
-library_type [base=Basic/expand=Extended], stock, category, subcategory,
-description). This is jlcparts' own "source-db-v2" format (SOURCE_DB_FORMAT
-in yaqwsx/jlcparts' sourceDb.py) -- it's exactly what `updater fetch-db`
-downloads and extracts (as cache.sqlite3), no further conversion needed;
---database accepts that file directly.
+"""Repeatable sync between data/catalog.json's family/variant model and
+JLCPCB's parts data.
 
-This is a hand-run curation tool, not part of `just build` — the sqlite
-snapshot is an offline research aid, not a build-time dependency for the
-live app (see updater/).
+`sync` (used by `just ci-build`, i.e. on every deploy) matches each known
+family's SEARCH_KEYWORDS against JLCPCB's live component-search API
+directly -- see live_search_rows. The downloaded jlcparts sqlite snapshot
+(`updater fetch-db`, a `jlc_components` table: lcsc, mfr [manufacturer part
+number], manufacturer [company name], package, library_type
+[base=Basic/expand=Extended], stock, category, subcategory, description;
+jlcparts' own "source-db-v2" format) has been observed to silently omit
+real, currently in-stock parts, so `sync` no longer depends on it by
+default -- pass --offline to fall back to matching against --database
+instead (e.g. for testing without network).
+
+`migrate` (one-time, already run) and `discover` do a full-table scan that
+only the downloaded snapshot can provide cheaply, so they still require
+--database (the raw output of `updater fetch-db` works as-is).
 
 Subcommands:
   migrate   one-time: convert the old regulators[]/fixed[] catalog shape
             into the families{} shape, then run a sync pass to populate
-            skus[] for every variant from the database.
-  sync      re-run SKU matching for an already-migrated catalog.json:
-            reports added / stale (stock==0) / removed SKUs per variant.
-            Safe to re-run anytime against a refreshed database snapshot.
-  discover  scan the database for regulator chip families not yet present
-            in the catalog at all, ranked by total stock, and emit draft
+            skus[] for every variant from --database.
+  sync      re-run SKU matching for an already-migrated catalog.json against
+            live JLCPCB search (or --database with --offline): reports
+            added / stale (stock==0) / removed SKUs per variant. Safe to
+            re-run anytime.
+  discover  scan --database for regulator chip families not yet present in
+            the catalog at all, ranked by total stock, and emit draft
             families/variants for review.
 
 Every mode only ever writes `skus`, `bestLcsc`, `bestTier` on existing
@@ -33,6 +39,9 @@ import json
 import re
 import sqlite3
 import sys
+import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -150,6 +159,64 @@ FAMILIES = {
     ]},
 }
 
+# variant_id -> keyword(s) to query JLCPCB's live component search with (see
+# live_search_rows). Hand-picked per variant rather than derived from the
+# regex above -- some patterns use alternation (mc34063, tl431) or optional
+# leading groups (xl1509's "X?") that don't reduce to a single literal
+# substring. These only need to be broad enough to surface candidates; the
+# FAMILIES regex above still does the precise match/reject afterward, so
+# over-matching here is harmless.
+SEARCH_KEYWORDS = {
+    "lm317": ("LM317",),
+    "lm337": ("LM337",),
+    "1117adj": ("1117",),
+    "ams1117-3.3": ("1117",),
+    "ams1117-5.0": ("1117",),
+    "xl1509": ("XL1509",),
+    "xl1509-5.0": ("XL1509",),
+    "xl1509-3.3": ("XL1509",),
+    "xl1509-12": ("XL1509",),
+    "lm2596": ("LM2596",),
+    "lm2596-5.0": ("LM2596",),
+    "lm2576": ("LM2576",),
+    "lm2576-5.0": ("LM2576",),
+    "tps54331": ("TPS54331",),
+    "tps5430": ("TPS5430",),
+    "mp1584": ("MP1584",),
+    "mp2338": ("MP2338",),
+    "tps54560": ("TPS54560",),
+    "tps54202": ("TPS54202",),
+    "xl4015": ("XL4015",),
+    "xl7015": ("XL7015",),
+    "sy8089": ("SY8089",),
+    "sy8113": ("SY8113",),
+    "mp2315": ("MP2315",),
+    "mp2307": ("MP2307",),
+    "mp1482": ("MP1482",),
+    "mp2451": ("MP2451",),
+    "mp2359": ("MP2359",),
+    "tps562200": ("TPS562208",),
+    "mc34063": ("MC34063", "AZ34063"),
+    "mt3608": ("MT3608",),
+    "tps62000": ("TPS62000",),
+    "tps62001": ("TPS62001",),
+    "tps62002": ("TPS62002",),
+    "tps62003": ("TPS62003",),
+    "tps62004": ("TPS62004",),
+    "tps62005": ("TPS62005",),
+    "tps62006": ("TPS62006",),
+    "tps62007": ("TPS62007",),
+    "tps62008": ("TPS62008",),
+    "tps61040": ("TPS61040",),
+    "tl431": ("TL431", "CJ431"),
+    "xc6206p332": ("XC6206",),
+    "ht7533-1": ("HT7533",),
+    "ht7550-1": ("HT7550",),
+    "l78m05": ("L78M05",),
+    "78l05": ("78L05",),
+    "78l12": ("78L12",),
+}
+
 # Old catalog "n" (fixed[]) values -> new variant id. Regulator variant ids
 # are unchanged from their old "id" field (lm317, xl1509, tps62000, ...).
 OLD_FIXED_NAME_TO_VARIANT = {
@@ -236,6 +303,100 @@ def load_regulator_rows(db_path):
     rows = cur.fetchall()
     conn.close()
     return rows
+
+
+# ---------------------------------------------------------------------------
+# Live JLCPCB search (sync's default row source -- see SEARCH_KEYWORDS above)
+#
+# The downloaded jlcparts snapshot (load_regulator_rows, still used by
+# migrate/discover) has been observed to silently omit real, currently
+# in-stock parts -- e.g. TPS5430DDAR/C9864 (334k+ in stock on JLCPCB's own
+# site) is simply absent from a freshly-fetched snapshot. `sync` only ever
+# needs a handful of known keywords per run, so it queries JLCPCB's public
+# component-search API directly instead -- the same endpoint jlcpcb.com's
+# own search box calls, no API key required.
+# ---------------------------------------------------------------------------
+LIVE_SEARCH_URL = "https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList"
+LIVE_SEARCH_PAGE_SIZE = 50
+LIVE_SEARCH_DELAY_S = 0.3
+LIVE_SEARCH_RETRIES = 3
+
+
+def _live_search_page(keyword, page):
+    body = json.dumps({
+        "keyword": keyword, "currentPage": page, "pageSize": LIVE_SEARCH_PAGE_SIZE, "searchSource": "search",
+    }).encode()
+    req = urllib.request.Request(LIVE_SEARCH_URL, data=body, method="POST", headers={
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Origin": "https://jlcpcb.com",
+        "Referer": "https://jlcpcb.com/parts",
+        "User-Agent": "Mozilla/5.0 (compatible; regbench-catalog-sync/1.0; +https://github.com/indrora/regbench)",
+    })
+    last_err = None
+    for attempt in range(LIVE_SEARCH_RETRIES):
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return json.load(resp)
+        # the WAF in front of this endpoint resets the connection outright
+        # (not a clean HTTP error) if hit too fast -- OSError covers that
+        # alongside URLError/TimeoutError.
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            last_err = e
+            time.sleep(LIVE_SEARCH_DELAY_S * (attempt + 1))
+    raise RuntimeError(f"JLCPCB live search failed for keyword {keyword!r} after {LIVE_SEARCH_RETRIES} attempts: {last_err}")
+
+
+def live_search_rows(keyword):
+    """All pages of JLCPCB's live component search for `keyword`, shaped
+    like jlc_components rows (same field names sku_from_row/
+    match_variant_skus already expect, via plain dict access)."""
+    rows, page = [], 1
+    while True:
+        data = _live_search_page(keyword, page)
+        info = data["data"]["componentPageInfo"]
+        page_list = info.get("list") or []  # a no-results page comes back as list: null, not []
+        for c in page_list:
+            rows.append({
+                "lcsc": int(c["componentCode"].lstrip("C")),
+                "mfr": c.get("componentModelEn"),
+                "manufacturer": c.get("componentBrandEn"),
+                "package": c.get("componentSpecificationEn"),
+                "library_type": c.get("componentLibraryType"),
+                "stock": c.get("stockCount") or 0,
+            })
+        if not page_list or page * LIVE_SEARCH_PAGE_SIZE >= (info.get("total") or 0):
+            break
+        page += 1
+        time.sleep(LIVE_SEARCH_DELAY_S)
+    return rows
+
+
+def static_row_source(rows):
+    """row_source for migrate/discover: every variant matches against the
+    same pre-loaded snapshot rows, as before."""
+    return lambda variant_id, pattern: rows
+
+
+def live_row_source():
+    """row_source for sync: queries JLCPCB live search per variant's
+    SEARCH_KEYWORDS, caching by keyword so variants sharing a root part
+    number (e.g. ams1117's three variants, all "1117") only fetch once."""
+    cache = {}
+
+    def _source(variant_id, pattern):
+        keywords = SEARCH_KEYWORDS.get(variant_id)
+        if not keywords:
+            raise KeyError(f"no SEARCH_KEYWORDS entry for variant '{variant_id}' -- required for live sync")
+        rows = []
+        for kw in keywords:
+            if kw not in cache:
+                print(f"  live search: {kw!r}", file=sys.stderr)
+                cache[kw] = live_search_rows(kw)
+            rows.extend(cache[kw])
+        return rows
+
+    return _source
 
 
 def sku_from_row(row):
@@ -329,9 +490,10 @@ def build_families_skeleton(catalog):
 # ---------------------------------------------------------------------------
 # sync
 # ---------------------------------------------------------------------------
-def sync_families(families, rows, prune_stale=False):
+def sync_families(families, row_source, prune_stale=False):
     """Mutates `families` in place: recomputes skus/bestLcsc/bestTier for
-    every variant against `rows`. Returns a report list of
+    every variant against row_source(variant_id, pattern) (see
+    static_row_source/live_row_source). Returns a report list of
     (family_id, variant_id, added, stale, truncated)."""
     report = []
     for fam_id, fam in FAMILIES.items():
@@ -343,7 +505,7 @@ def sync_families(families, rows, prune_stale=False):
             variant = variants_by_id.get(variant_id)
             if variant is None:
                 continue
-            matched = match_variant_skus(rows, pattern)
+            matched = match_variant_skus(row_source(variant_id, pattern), pattern)
             matched_codes = {s["lcsc"] for s in matched}
             current = variant.get("skus", [])
             current_codes = {s["lcsc"] for s in current}
@@ -515,22 +677,27 @@ def main():
     parser.add_argument("--database", type=Path, default=DEFAULT_DATABASE, help="path to the sqlite JLCPCB snapshot (the raw output of `updater fetch-db` works as-is; defaults to ./db.sqlite3 or ./cache.sqlite3, whichever exists)")
     parser.add_argument("--dry-run", action="store_true", help="print the report but don't write catalog.json")
     parser.add_argument("--prune-stale-skus", action="store_true", help="(sync) drop skus with stock==0 or no longer matching, instead of just flagging them")
+    parser.add_argument("--offline", action="store_true", help="(sync) match against the downloaded --database snapshot instead of live JLCPCB search")
     parser.add_argument("--top", type=int, default=15, help="(discover) how many new families to surface")
     parser.add_argument("--min-variants", type=int, default=2, help="(discover) minimum distinct part numbers to count as a family")
     args = parser.parse_args()
 
-    if not args.database.exists():
-        sys.exit(f"database not found: {args.database} -- run `just fetchdb` (or `updater fetch-db`) first, or pass --database explicitly")
-
-    rows = load_regulator_rows(args.database)
-    print(f"loaded {len(rows)} candidate rows from {args.database}", file=sys.stderr)
+    # sync's default row source is live JLCPCB search (see SEARCH_KEYWORDS) --
+    # no local snapshot needed unless --offline is passed. migrate/discover
+    # still do a full-table scan, which only the snapshot can provide.
+    needs_database = args.mode in ("migrate", "discover") or (args.mode == "sync" and args.offline)
+    if needs_database:
+        if not args.database.exists():
+            sys.exit(f"database not found: {args.database} -- run `just fetchdb` (or `updater fetch-db`) first, or pass --database explicitly")
+        rows = load_regulator_rows(args.database)
+        print(f"loaded {len(rows)} candidate rows from {args.database}", file=sys.stderr)
 
     if args.mode == "migrate":
         catalog = load_catalog(args.catalog)
         if "families" in catalog:
             sys.exit("catalog.json already has a 'families' key -- already migrated; use 'sync' instead")
         families = build_families_skeleton(catalog)
-        report = sync_families(families, rows, prune_stale=False)
+        report = sync_families(families, static_row_source(rows), prune_stale=False)
         print_report(report)
         new_catalog = {"meta": catalog["meta"], "families": families, "jelly": catalog["jelly"], "support": catalog["support"]}
         if not args.dry_run:
@@ -541,7 +708,8 @@ def main():
         catalog = load_catalog(args.catalog)
         if "families" not in catalog:
             sys.exit("catalog.json has no 'families' key -- run 'migrate' first")
-        report = sync_families(catalog["families"], rows, prune_stale=args.prune_stale_skus)
+        row_source = static_row_source(rows) if args.offline else live_row_source()
+        report = sync_families(catalog["families"], row_source, prune_stale=args.prune_stale_skus)
         print_report(report)
         if not args.dry_run:
             args.catalog.write_text(json.dumps(catalog, indent=1, ensure_ascii=False) + "\n")

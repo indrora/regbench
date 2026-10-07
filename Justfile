@@ -15,14 +15,17 @@ build:
 
 fetchdb:
 	# Fetch + reassemble yaqwsx/jlcparts' cache.sqlite3 snapshot (currently
-	# ~1GB) -- the raw source both `build`'s resistor stock and
-	# tools/catalog_sync.py's SKU sync ultimately come from.
+	# ~1GB) -- the raw source for `build`'s resistor stock (that snapshot
+	# has reliable bulk resistor coverage; tools/catalog_sync.py's
+	# regulator SKU sync queries JLCPCB's live search API directly
+	# instead, since the snapshot has been seen to silently drop
+	# real in-stock regulator parts).
 	uv run --project updater updater fetch-db
 
-# CI-only: fetchdb + re-sync data/catalog.json's SKUs/stock against that
-# fresh snapshot before building, so each deploy reflects JLC's current
-# stock instead of whatever was last hand-curated. Too slow (multi-GB
-# download) to run on every local `just build`.
+# CI-only: fetchdb (for build's resistor stock) + re-sync data/catalog.json's
+# regulator SKUs against live JLCPCB search before building, so each deploy
+# reflects current stock instead of whatever was last hand-curated. Too slow
+# (multi-GB download) to run on every local `just build`.
 ci-build:
 	just fetchdb
 	python3 tools/catalog_sync.py sync --prune-stale-skus
